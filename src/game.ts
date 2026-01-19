@@ -947,11 +947,31 @@ class MapScene extends Phaser.Scene {
         // ★重要: パネル自体はスクロールさせず、中身だけスクロールさせる (CLOSEボタンを常に表示)
         container.style.overflow = 'hidden';
 
+        // Header Row (Title + Top Exit Button)
+        const headerRow = document.createElement('div');
+        headerRow.style.display = 'flex';
+        headerRow.style.justifyContent = 'space-between';
+        headerRow.style.alignItems = 'center';
+        headerRow.style.marginBottom = '20px';
+        headerRow.style.borderBottom = '2px solid var(--neon-pink)';
+        headerRow.style.paddingBottom = '5px';
+
         const h2 = document.createElement('h2');
         h2.innerText = title;
         h2.className = 'cyber-title';
-        // h2.style.flexShrink = '0'; // ヘッダーは縮まない
-        container.appendChild(h2);
+        h2.style.borderBottom = 'none'; // Handle border in parent
+        h2.style.marginBottom = '0';
+        h2.style.paddingBottom = '0';
+        headerRow.appendChild(h2);
+
+        const topCloseBtn = document.createElement('button');
+        topCloseBtn.innerText = DataManager.language === 'ja' ? '出る' : 'LEAVE';
+        topCloseBtn.className = 'cyber-btn danger';
+        topCloseBtn.style.height = 'fit-content';
+        topCloseBtn.onclick = () => { overlay.remove(); this.isMenuOpen = false; this.updateHeader(); };
+        headerRow.appendChild(topCloseBtn);
+
+        container.appendChild(headerRow);
 
         const content = document.createElement('div');
         content.style.flex = '1';
