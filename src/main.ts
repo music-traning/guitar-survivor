@@ -1559,13 +1559,9 @@ class GameScene extends Phaser.Scene {
             this.bossLastFired = time;
         }
 
-        // Cleanup Logic Optimized
-        this.bullets.children.each((b: any) => {
-            if (b.active && (b.x < -100 || b.x > this.scale.width + 100 || b.y < -100 || b.y > this.scale.height + 100)) {
-                b.destroy();
-            }
-            return true;
-        });
+        // Cleanup Logic Optimized: 
+        // We rely on time.delayedCall in fireBullet to destroy bullets. 
+        // No need for per-frame O(N) loop here.
     }
 
 
@@ -1698,12 +1694,10 @@ class GameScene extends Phaser.Scene {
 
     fireBullet(target: any) {
         const b = this.bullets.create(this.player.x, this.player.y, 'bullet');
-        // Enable world bounds for auto-disable
-        b.body.setCollideWorldBounds(true);
-        b.body.onWorldBounds = true; // Enable event
+        // Disable world bounds so they can fly off-screen and not stuck at edges
+        // b.body.setCollideWorldBounds(true); 
 
-        // Manual out-of-bounds kill using a timer is safer than physics bounds sometimes for "flying out"
-        // But for performance, let's just use a time-to-live to ensure they don't pile up.
+        // Manual out-of-bounds kill using a timer
         this.time.delayedCall(3000, () => { if (b.active) b.destroy(); }); // Hard cap lifetime
 
         const angle = Phaser.Math.Angle.Between(this.player.x, this.player.y, target.x, target.y);
@@ -1782,12 +1776,26 @@ const config: Phaser.Types.Core.GameConfig = {
     backgroundColor: '#000000', // ★明示的に背景色を黒に設定
     scale: {
         mode: Phaser.Scale.RESIZE, // ★完全レスポンシブ
-        autoCenter: Phaser.Scale.CENTER_BOTH
+        autoCenter: Phaser.Scale.CENTER_BOTH,
+    },
+    // ★重要: モバイルでの高解像度レンダリングを無効化 (ScaleConfigではなくGameConfigのルートプロパティ)
+    // @ts-ignore
+    resolution: 1,
+    // ★重要: FPSを30に制限して負荷を下げる（スマホ対策）
+    fps: {
+        target: 30,
+        forceSetTimeOut: true
     },
     parent: 'app',
     physics: { default: 'arcade', arcade: { gravity: { x: 0, y: 0 }, debug: false } },
     scene: [BootScene, MapScene, GameScene],
-    pixelArt: true
+    pixelArt: true,
+    render: {
+        antialias: false,
+        pixelArt: true,
+        roundPixels: true,
+        powerPreference: 'high-performance'
+    }
 };
 
 new Phaser.Game(config);
