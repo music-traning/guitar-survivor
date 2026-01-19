@@ -61,7 +61,8 @@ const TRANSLATIONS = {
         STAGE_CLEAR: "STAGE CLEAR!",
         GET_ITEM: "アイテム獲得: ",
         LEVEL_UP: "LEVEL UP!",
-        SKILL_LEARNED: "スキル習得: "
+        SKILL_LEARNED: "スキル習得: ",
+        HELP: "ヘルプ"
     },
     en: {
         LANG_BUTTON: "日本語", // ボタンのラベル（押すと日本語になる）
@@ -77,7 +78,8 @@ const TRANSLATIONS = {
         STAGE_CLEAR: "STAGE CLEAR!",
         GET_ITEM: "Got Item: ",
         LEVEL_UP: "LEVEL UP!",
-        SKILL_LEARNED: "Learned: "
+        SKILL_LEARNED: "Learned: ",
+        HELP: "HELP"
     }
 };
 
@@ -99,7 +101,149 @@ function getTxItemDesc(item: ItemData | GuitarData | SkillData | any): string {
     return (lang === 'ja' ? item.description_ja : item.description_en) || item.description_en || "";
 }
 
-// ==========================================
+// --- Manual Data ---
+const MANUAL_JA = `
+<h3>1. ゲーム概要 (Game Overview)</h3>
+<p>本アプリケーションは、プレイヤーがギタリストとなり、迫りくる「メトロノーム軍団」をギターサウンド（弾丸）で撃退しながら成長していく2D見下ろし型シューティングRPGです。<br>
+プレイヤーは稼いだ資金で新たなギターを購入し、スキルを習得し、アイテムで身体能力を強化して、最強のギタリストを目指します。</p>
+
+<h3>2. 操作方法 (Controls)</h3>
+<p>PCブラウザ環境での操作を前提としています。</p>
+<ul>
+    <li><b>移動:</b> W, A, S, D または 矢印キー</li>
+    <li><b>攻撃:</b> 自動 (Auto Fire) - 最も近い敵を狙います。</li>
+    <li><b>スキル:</b> SPACE キー (Active Skill)</li>
+    <li><b>UI操作:</b> マウス (クリック)</li>
+    <li><b>言語切替:</b> 画面右上ボタン (タイトル画面)</li>
+</ul>
+
+<h3>3. 画面表示 (HUD)</h3>
+<p><b>プレイ画面:</b><br>
+HP (赤): 0になるとGAME OVER。<br>
+MP (青): スキル使用で消費。<br>
+Gold: お金。ショップで使用。</p>
+
+<p><b>ショップ (Map上のSHOP):</b><br>
+GUITAR: 武器購入。Rate(連射)などが変化。<br>
+ITEM: 回復・強化アイテム。<br>
+SKILL: パッシブ・アクティブスキルの習得。</p>
+
+<h3>4. ゲームシステム (Mechanics)</h3>
+<p><b>戦闘:</b> 敵(メトロノーム)はプレイヤーに向かってきます。接触するとダメージ(10)。倒すとGoldを落とします。</p>
+<p><b>ステータス:</b><br>
+Speed: 移動速度<br>
+Rate: 連射間隔 (値が小さいほど速い)<br>
+Size: 弾の大きさ<br>
+MP Cost: スキル消費MP</p>
+
+<h3>5. データベース (Database)</h3>
+<p><b>ギター (Weapons):</b><br>
+G000 Old Acoustic: 初期装備。<br>
+G005 Yamaha Pacifica: バランス型。<br>
+G015 Ibanez JEM: 速弾き特化 (Rate:380)。<br>
+G019 Gibson L5 CES: ジャズの皇帝。高威力。<br>
+I023 Pick of Destiny: 連射速度が劇的に向上 (Rate x0.1)。</p>
+
+<p><b>アイテム (Items):</b><br>
+Energy Drink: HP回復。<br>
+Black Coffee: MP回復。<br>
+Pick (各種): 所持でステータス補正。</p>
+
+<p><b>スキル (Skills):</b><br>
+S001 Down Picking: Speed微増。<br>
+S007 Power Chord: 弾サイズUp。<br>
+S009 Sweep Picking: 範囲攻撃 (Active)。</p>
+
+<h3>6. トラブルシューティング</h3>
+<p>HPが0になるとGAME OVERとなり、3秒後にマップへ戻ります。Goldは維持されます。</p>
+`;
+
+const MANUAL_EN = `
+<h3>1. Game Overview</h3>
+<p>This is a top-down 2D shooting RPG where you play as a guitarist repelling the "Metronome Army" with guitar sounds. Buy guitars, learn skills, and become the Legend.</p>
+
+<h3>2. Controls</h3>
+<p>Designed for PC Browsers.</p>
+<ul>
+    <li><b>Move:</b> W, A, S, D or Arrow Keys</li>
+    <li><b>Attack:</b> Auto Fire (aims at nearest enemy)</li>
+    <li><b>Skill:</b> SPACE Key (Active Skill)</li>
+    <li><b>UI:</b> Mouse Click</li>
+    <li><b>Language:</b> Top-Right Button (Title Screen)</li>
+</ul>
+
+<h3>3. HUD</h3>
+<p><b>Game Scene:</b><br>
+HP (Red): Game Over if 0.<br>
+MP (Blue): Consumed by skills.<br>
+Gold: Currency.</p>
+
+<p><b>Shop:</b><br>
+GUITAR: Buy weapons (affects Rate/Speed).<br>
+ITEM: Recovery & Buffs.<br>
+SKILL: Learn Passive/Active skills.</p>
+
+<h3>4. Mechanics</h3>
+<p><b>Combat:</b> Enemies chase you. Contact deals 10 damage. Defeat to get Gold.</p>
+<p><b>Stats:</b><br>
+Speed: Movement Speed<br>
+Rate: Fire Interval (Lower is faster)<br>
+Size: Bullet Size<br>
+MP Cost: Mana consumption</p>
+
+<h3>5. Database</h3>
+<p><b>Guitars:</b><br>
+G000 Old Acoustic: Starter.<br>
+G005 Yamaha Pacifica: Balanced.<br>
+G015 Ibanez JEM: Shred specialist (Rate:380).<br>
+G019 Gibson L5 CES: Jazz Emperor.<br>
+I023 Pick of Destiny: Extreme Fire Rate (Rate x0.1).</p>
+
+<p><b>Items:</b><br>
+Energy Drink: Heal HP.<br>
+Black Coffee: Heal MP.<br>
+Picks: Passive stats boost.</p>
+
+<p><b>Skills:</b><br>
+S001 Down Picking: Speed up.<br>
+S007 Power Chord: Bullet Size up.<br>
+S009 Sweep Picking: Area Attack (Active).</p>
+
+<h3>6. Troubleshooting</h3>
+<p>If HP hits 0, it's GAME OVER. You return to Map after 3s. Gold is kept.</p>
+`;
+
+function openHelpModal() {
+    const lang = GameDataManager.instance.language;
+    const content = lang === 'ja' ? MANUAL_JA : MANUAL_EN;
+    const title = lang === 'ja' ? "MANUAL" : "MANUAL";
+
+    const overlay = document.createElement('div');
+    overlay.className = 'cyber-overlay';
+
+    const panel = document.createElement('div');
+    panel.className = 'cyber-panel';
+    panel.style.width = '600px';
+    panel.style.maxWidth = '90%';
+
+    panel.innerHTML = `
+        <h2 class="cyber-title">${title}</h2>
+        <div style="text-align:left; line-height:1.6; max-height:60vh; overflow-y:auto; padding-right:10px;">
+            ${content}
+        </div>
+        <div style="text-align:center; margin-top:20px;">
+            <button class="cyber-btn" id="help-close-btn">CLOSE</button>
+        </div>
+    `;
+
+    overlay.appendChild(panel);
+    document.body.appendChild(overlay);
+
+    document.getElementById('help-close-btn')!.onclick = () => {
+        overlay.remove();
+    };
+}
+
 // ★データ管理 (変数定義漏れ修正済み)
 // ==========================================
 class GameDataManager {
@@ -431,6 +575,18 @@ class BootScene extends Phaser.Scene {
         langBtn.on('pointerover', () => langBtn.setColor('#00f3ff'));
         langBtn.on('pointerout', () => langBtn.setColor('#fff'));
 
+        // Help Button
+        const helpBtn = this.add.text(this.scale.width - 120, 20, getTx('HELP'), {
+            fontFamily: 'Orbitron', fontSize: '20px', color: '#fff'
+        }).setOrigin(1, 0).setInteractive({ useHandCursor: true });
+
+        helpBtn.on('pointerdown', () => {
+            openHelpModal();
+        });
+        helpBtn.on('pointerover', () => helpBtn.setColor('#00f3ff'));
+        helpBtn.on('pointerout', () => helpBtn.setColor('#fff'));
+
+
         // Cyberpunk Title
         const titleText = this.add.text(cx, cy - 100, 'GUITAR\nSURVIVOR', {
             fontFamily: 'Orbitron', fontSize: '64px', color: '#00f3ff', fontStyle: 'bold', align: 'center'
@@ -602,6 +758,16 @@ class MapScene extends Phaser.Scene {
         this.createMapSpot(w * 0.2, cy + 100, '🏠 SHOP', 0x00ffff, () => this.openShopUI());
         this.createMapSpot(w * 0.8, cy + 100, '🏯 MASTER', 0xffaa00, () => this.openMasterUI());
         this.createMapSpot(cx, gearY, '🎸 GEAR', 0x00ff00, () => this.openStatusUI());
+
+        // Help Button (Map)
+        const helpBtn = this.add.text(w - 20, 20, getTx('HELP'), {
+            fontFamily: 'Orbitron', fontSize: '20px', color: '#fff'
+        }).setOrigin(1, 0).setInteractive({ useHandCursor: true }).setScrollFactor(0);
+
+        helpBtn.on('pointerdown', () => openHelpModal());
+        helpBtn.on('pointerover', () => helpBtn.setColor('#00f3ff'));
+        helpBtn.on('pointerout', () => helpBtn.setColor('#fff'));
+
     }
 
     updateHeader() {
@@ -696,7 +862,7 @@ class MapScene extends Phaser.Scene {
         box.style.minWidth = '300px';
         box.style.textAlign = 'center';
 
-        box.innerHTML = `< p style = "white-space:pre-wrap;" > ${message} </p>`;
+        box.innerHTML = `<p style="white-space:pre-wrap;">${message}</p>`;
 
         const btn = document.createElement('button');
         btn.innerText = 'OK';
