@@ -1241,9 +1241,11 @@ class GameScene extends Phaser.Scene {
         this.stats = DataManager.calculateStats();
 
         if (Tone) {
+            // Cleanup existing synths if any (though shutdown should handle it)
+            if (this.synth) { this.synth.dispose(); }
+            if (this.metalSynth) { this.metalSynth.dispose(); }
+
             Tone.Destination.volume.value = -10;
-            // Simplify Audio Graph for Mobile
-            // Use a single PolySynth with limited capacity
             const lowPass = new Tone.Filter(3000, "lowpass").toDestination();
 
             this.synth = new Tone.PolySynth(Tone.Synth, {
@@ -1258,6 +1260,9 @@ class GameScene extends Phaser.Scene {
             }).connect(lowPass);
             this.metalSynth.maxPolyphony = 2;
         }
+
+        // Handle Scene Shutdown to free resources
+        this.events.on('shutdown', this.shutdown, this);
 
         const w = this.scale.width;
         const h = this.scale.height;
@@ -1781,6 +1786,22 @@ class GameScene extends Phaser.Scene {
         this.add.text(this.scale.width / 2, this.scale.height / 2, 'GAME OVER', { fontSize: '64px', color: '#f00', stroke: '#000', strokeThickness: 6 }).setOrigin(0.5).setScrollFactor(0).setDepth(200);
         DataManager.currentHp = DataManager.maxHp; DataManager.currentMp = DataManager.maxMp;
         setTimeout(() => this.returnToMap(), 3000);
+    }
+
+    shutdown() {
+        // Cleanup Tone.js nodes to prevent memory leak and mobile crash
+        if (this.synth) {
+            try { this.synth.dispose(); } catch (e) {
+                /* ignore */
+            }
+            this.synth = null;
+        }
+        if (this.metalSynth) {
+            try { this.metalSynth.dispose(); } catch (e) {
+                /* ignore */
+            }
+            this.metalSynth = null;
+        }
     }
 }
 
