@@ -1259,6 +1259,10 @@ class GameScene extends Phaser.Scene {
     constructor() { super('game-scene'); }
 
     create() {
+        // ★重要: タイマーとツイーンを完全リセット (敵の重なり・増殖バグの完全修正)
+        this.time.removeAllEvents();
+        this.tweens.killAll();
+
         // ★重要: シーン開始時に前の残骸を全て消去 (プレイヤーが分身するバグ対策)
         this.children.removeAll();
 
