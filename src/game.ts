@@ -1430,9 +1430,24 @@ class GameScene extends Phaser.Scene {
 
         this.enemies = this.physics.add.group();
         this.bullets = this.physics.add.group();
-        this.loots = this.physics.add.group();
-        this.cursors = this.input.keyboard!.createCursorKeys();
+        if (this.input.keyboard) {
+            this.input.keyboard.removeAllKeys(); // ★重要: 先に古いキー設定を削除
+            this.cursors = this.input.keyboard.createCursorKeys(); // ★重要: その後にカーソルキーを作成
 
+            this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE).on('down', () => this.useSkill(0));
+            const numKeys = [
+                Phaser.Input.Keyboard.KeyCodes.ONE, Phaser.Input.Keyboard.KeyCodes.TWO,
+                Phaser.Input.Keyboard.KeyCodes.THREE, Phaser.Input.Keyboard.KeyCodes.FOUR,
+                Phaser.Input.Keyboard.KeyCodes.FIVE
+            ];
+            numKeys.forEach((code, i) => {
+                this.input.keyboard!.addKey(code).on('down', () => this.useConsumable(i));
+            });
+        } else {
+            // Fallback if keyboard plugin is missing (rare)
+            this.cursors = this.input.keyboard!.createCursorKeys();
+        }
+        this.loots = this.physics.add.group();
         this.enemyBullets = this.physics.add.group();
 
         // ★修正: 再帰的なスポーンループを開始 (TimerEventのループは使わない)
@@ -1452,19 +1467,6 @@ class GameScene extends Phaser.Scene {
 
         this.createHUD();
         this.createMobileUI();
-
-        if (this.input.keyboard) {
-            this.input.keyboard.removeAllKeys(); // Remove old keys
-            this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE).on('down', () => this.useSkill(0));
-            const numKeys = [
-                Phaser.Input.Keyboard.KeyCodes.ONE, Phaser.Input.Keyboard.KeyCodes.TWO,
-                Phaser.Input.Keyboard.KeyCodes.THREE, Phaser.Input.Keyboard.KeyCodes.FOUR,
-                Phaser.Input.Keyboard.KeyCodes.FIVE
-            ];
-            numKeys.forEach((code, i) => {
-                this.input.keyboard!.addKey(code).on('down', () => this.useConsumable(i));
-            });
-        }
     }
 
     spawnLoop() {
