@@ -944,22 +944,27 @@ class MapScene extends Phaser.Scene {
         container.className = 'cyber-panel';
         container.style.display = 'flex';
         container.style.flexDirection = 'column';
+        // ★重要: パネル自体はスクロールさせず、中身だけスクロールさせる (CLOSEボタンを常に表示)
+        container.style.overflow = 'hidden';
 
         const h2 = document.createElement('h2');
         h2.innerText = title;
         h2.className = 'cyber-title';
+        // h2.style.flexShrink = '0'; // ヘッダーは縮まない
         container.appendChild(h2);
 
         const content = document.createElement('div');
         content.style.flex = '1';
-        content.style.overflowY = 'auto';
+        content.style.overflowY = 'auto'; // ここでスクロール
         content.style.marginBottom = '20px';
+        content.style.minHeight = '0'; // Flexboxネストのバグ回避用
         container.appendChild(content);
 
         const closeBtn = document.createElement('button');
         closeBtn.innerText = 'CLOSE';
         closeBtn.className = 'cyber-btn danger';
         closeBtn.style.alignSelf = 'center';
+        closeBtn.style.flexShrink = '0'; // フッターは縮まない
         closeBtn.onclick = () => { overlay.remove(); this.isMenuOpen = false; this.updateHeader(); };
         container.appendChild(closeBtn);
 
