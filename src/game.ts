@@ -1596,8 +1596,25 @@ class GameScene extends Phaser.Scene {
         this.cameras.main.shake(100, 0.01); this.synth.triggerAttackRelease(["C2", "F#2"], "8n");
         if (DataManager.currentHp <= 0) this.gameOver();
         else {
-            this.isInvincible = true; this.player.setAlpha(0.5);
-            this.time.delayedCall(1000, () => { this.isInvincible = false; this.player.setAlpha(1); });
+            this.isInvincible = true;
+
+            // Knockback
+            const angle = Phaser.Math.Angle.Between(_enemy.x, _enemy.y, _player.x, _player.y);
+            const knockback = new Phaser.Math.Vector2(Math.cos(angle), Math.sin(angle)).scale(300);
+            (_player.body as Phaser.Physics.Arcade.Body).setVelocity(knockback.x, knockback.y);
+
+            // Blinking Effect
+            this.tweens.add({
+                targets: this.player,
+                alpha: 0.2,
+                duration: 100,
+                yoyo: true,
+                repeat: 9, // Approx 2000ms total
+                onComplete: () => {
+                    this.isInvincible = false;
+                    this.player.setAlpha(1);
+                }
+            });
         }
     }
 
