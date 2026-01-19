@@ -361,9 +361,19 @@ class GameDataManager {
             this.equippedSkills = []; // Will be rebuild from IDs if needed, or just hydrate
             // Wait, equippedSkills is list of SkillData.
             // Better to re-find them from master.
+            // Skills: Re-link to master using IDs to ensure we have the correct object references (with 'learned' status, etc.)
             const savedEquipped = data.equippedSkills || [];
-            this.equippedSkills = savedEquipped.map((s: any) => this.skillMaster.find(sm => sm.id === s.id)).filter((s: any) => s);
+            this.equippedSkills = [];
+            savedEquipped.forEach((s: any) => {
+                const master = this.skillMaster.find(sm => sm.id === s.id);
+                if (master) {
+                    // Update master learned status if needed (though master should be source of truth for properties, learned comes from save if we save it there)
+                    master.learned = true; // If it was equipped, it must be learned
+                    this.equippedSkills.push(master);
+                }
+            });
 
+            // Restore learned status from save for all skills
             if (data.skillMaster && this.skillMaster.length > 0) {
                 this.skillMaster.forEach(s => {
                     const saved = data.skillMaster.find((ss: SkillData) => ss.id === s.id);
@@ -524,14 +534,14 @@ class BootScene extends Phaser.Scene {
         Papa.parse('/items.csv', {
             download: true, header: true, dynamicTyping: true, complete: (r) => {
                 DataManager.itemMaster = r.data as ItemData[];
-                DataManager.shopStock = [...DataManager.itemMaster].filter(i => i.name_en && i.rarity === 'common');
+                // Only init shop if new game (shopStock is empty or we haven't loaded yet)
+                // We will handle data loading after all CSVs are done.
                 this.check();
             }
         });
         Papa.parse('/guitars.csv', {
             download: true, header: true, dynamicTyping: true, complete: (r) => {
                 DataManager.guitarMaster = (r.data as any[]).map(row => ({ ...row, tags: row.tags ? row.tags.split('|') : [], fireRate: row.rate })).filter(g => g.id);
-                DataManager.shopStock.push(...DataManager.guitarMaster);
                 if (!DataManager.currentGuitar && DataManager.guitarMaster.length > 0) DataManager.currentGuitar = { ...DataManager.guitarMaster[0] };
                 this.check();
             }
@@ -554,6 +564,14 @@ class BootScene extends Phaser.Scene {
             // Remove loading screen when data is ready
             const loading = document.getElementById('loading-screen');
             if (loading) loading.remove();
+
+            // Try to load save data NOW, after masters are ready
+            // If load returns false (no save), we populate default shop.
+            if (!DataManager.load()) {
+                // New Game Setup
+                DataManager.shopStock = [...DataManager.itemMaster].filter(i => i.name_en && i.rarity === 'common');
+                DataManager.shopStock.push(...DataManager.guitarMaster);
+            }
 
             this.createTitleScreen();
         }
@@ -730,6 +748,7 @@ class BootScene extends Phaser.Scene {
 class MapScene extends Phaser.Scene {
     private txtInfo!: Phaser.GameObjects.Text;
     private txtGuitar!: Phaser.GameObjects.Text;
+    private txtGold!: Phaser.GameObjects.Text; // ★Added
     private isMenuOpen: boolean = false;
     private statusTab: 'items' | 'skills' = 'items';
 
@@ -742,8 +761,11 @@ class MapScene extends Phaser.Scene {
 
         this.add.tileSprite(0, 0, w, h, 'background').setOrigin(0).setTint(0x004400);
 
-        this.txtInfo = this.add.text(20, 20, '', { fontSize: '24px', color: '#ff0' });
-        this.txtGuitar = this.add.text(20, 50, '', { fontSize: '18px', color: '#fff' });
+        // Header Layout Refined
+        this.txtInfo = this.add.text(20, 20, '', { fontSize: '20px', color: '#fff' }); // Lv & HP
+        this.txtGuitar = this.add.text(20, 50, '', { fontSize: '16px', color: '#ccc' }); // Guitar Name
+        this.txtGold = this.add.text(w - 20, 50, '', { fontSize: '20px', color: '#f9e504' }).setOrigin(1, 0); // Gold (Right aligned)
+
         this.updateHeader();
 
         const cx = w / 2;
@@ -774,9 +796,9 @@ class MapScene extends Phaser.Scene {
         this.createMapSpot(w * 0.8, cy + 100, '🏯 MASTER', 0xffaa00, () => this.openMasterUI());
         this.createMapSpot(cx, gearY, '🎸 GEAR', 0x00ff00, () => this.openStatusUI());
 
-        // Help Button (Map)
+        // Help Button (Map) - Top Right
         const helpBtn = this.add.text(w - 20, 20, getTx('HELP'), {
-            fontFamily: 'Orbitron', fontSize: '20px', color: '#fff'
+            fontFamily: 'Orbitron', fontSize: '16px', color: '#fff'
         }).setOrigin(1, 0).setInteractive({ useHandCursor: true }).setScrollFactor(0);
 
         helpBtn.on('pointerdown', () => openHelpModal());
@@ -786,8 +808,12 @@ class MapScene extends Phaser.Scene {
     }
 
     updateHeader() {
-        this.txtInfo.setText(`Lv.${DataManager.playerLevel} / HP:${DataManager.currentHp} / GOLD:${DataManager.money} G`);
-        this.txtGuitar.setText(`GUITAR: ${getTxItemName(DataManager.currentGuitar)} `);
+        this.txtInfo.setText(`Lv.${DataManager.playerLevel}  HP:${DataManager.currentHp}/${DataManager.maxHp}`);
+        this.txtGuitar.setText(`GUITAR: ${getTxItemName(DataManager.currentGuitar)}`);
+        this.txtGold.setText(`${DataManager.money} G`);
+
+        // Ensure gold stays aligned right if content changes length
+        this.txtGold.setX(this.scale.width - 20);
     }
 
     createMapSpot(x: number, y: number, label: string, color: number, onClick: () => void, scale: number = 1.0) {
