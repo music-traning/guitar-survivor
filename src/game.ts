@@ -1259,6 +1259,12 @@ class GameScene extends Phaser.Scene {
     constructor() { super('game-scene'); }
 
     create() {
+        // ★重要: HTMLのオーバーレイ（ショップなどのUI）が残っていると操作不能になるため強制削除
+        document.querySelectorAll('.cyber-overlay').forEach(el => el.remove());
+
+        // ★重要: 物理エンジンを確実に再開させる
+        this.physics.resume();
+
         this.isInvincible = false; this.killCount = 0; this.isBossActive = false; this.bossObject = null; this.speedBuffActive = false;
         const stage = DataManager.currentStage;
         if (DataManager.isPracticeMode) { this.requiredKills = Infinity; }
@@ -1266,28 +1272,34 @@ class GameScene extends Phaser.Scene {
 
         this.stats = DataManager.calculateStats();
 
+        // Audio Init with Safety
         if (Tone) {
-            // Cleanup existing synths if any (though shutdown should handle it)
-            if (this.synth) { this.synth.dispose(); }
-            if (this.metalSynth) { this.metalSynth.dispose(); }
+            try {
+                // Cleanup existing synths if any
+                if (this.synth) { try { this.synth.dispose(); } catch (e) { } }
+                if (this.metalSynth) { try { this.metalSynth.dispose(); } catch (e) { } }
 
-            Tone.Destination.volume.value = -10;
-            const lowPass = new Tone.Filter(3000, "lowpass").toDestination();
+                Tone.Destination.volume.value = -10;
+                const lowPass = new Tone.Filter(3000, "lowpass").toDestination();
 
-            this.synth = new Tone.PolySynth(Tone.Synth, {
-                volume: -10,
-                oscillator: { type: "triangle" },
-                envelope: { attack: 0.01, decay: 0.1, sustain: 0.1, release: 0.5 }
-            }).connect(lowPass);
-            this.synth.maxPolyphony = 4;
+                this.synth = new Tone.PolySynth(Tone.Synth, {
+                    volume: -10,
+                    oscillator: { type: "triangle" },
+                    envelope: { attack: 0.01, decay: 0.1, sustain: 0.1, release: 0.5 }
+                }).connect(lowPass);
+                this.synth.maxPolyphony = 4;
 
-            this.metalSynth = new Tone.PolySynth(Tone.MembraneSynth, {
-                volume: -10
-            }).connect(lowPass);
-            this.metalSynth.maxPolyphony = 2;
+                this.metalSynth = new Tone.PolySynth(Tone.MembraneSynth, {
+                    volume: -10
+                }).connect(lowPass);
+                this.metalSynth.maxPolyphony = 2;
+            } catch (e) {
+                console.error("Audio Init Failed:", e);
+            }
         }
 
         // Handle Scene Shutdown to free resources
+        this.events.off('shutdown'); // Remove old listeners to avoid weird stacking
         this.events.on('shutdown', this.shutdown, this);
 
         const w = this.scale.width;
@@ -1305,9 +1317,7 @@ class GameScene extends Phaser.Scene {
 
         this.enemyBullets = this.physics.add.group();
 
-        this.loots = this.physics.add.group();
-
-        const spawnDelay = Math.max(100, 600 - (stage * 50)); // ★Spawn faster
+        const spawnDelay = Math.max(100, 600 - (stage * 50));
         this.spawnEvent = this.time.addEvent({ delay: spawnDelay, callback: this.spawnEnemy, callbackScope: this, loop: true });
 
         this.physics.add.overlap(this.bullets, this.enemies, (b, e) => this.hitEnemy(b, e));
@@ -1326,7 +1336,7 @@ class GameScene extends Phaser.Scene {
         this.createMobileUI();
 
         if (this.input.keyboard) {
-            // SpaceはSkill1
+            this.input.keyboard.removeAllKeys(); // Remove old keys
             this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE).on('down', () => this.useSkill(0));
             const numKeys = [
                 Phaser.Input.Keyboard.KeyCodes.ONE, Phaser.Input.Keyboard.KeyCodes.TWO,
