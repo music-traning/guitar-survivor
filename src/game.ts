@@ -542,8 +542,8 @@ class GameDataManager {
         if (this.playerExp >= this.nextLevelExp) {
             this.playerLevel++;
             this.playerExp = 0;
-            // Leveling Curve eased: 1.5 -> 1.2
-            this.nextLevelExp = Math.ceil(this.nextLevelExp * 1.2);
+            // Leveling Curve ultra-eased: 1.2 -> 1.1
+            this.nextLevelExp = Math.ceil(this.nextLevelExp * 1.1);
             this.maxHp += 10; this.maxMp += 5;
             this.currentHp = this.maxHp; this.currentMp = this.maxMp;
             this.save();
@@ -1829,7 +1829,7 @@ class GameScene extends Phaser.Scene {
 
         // Always give rewards
         DataManager.money += 10;
-        if (DataManager.gainExp(1)) {
+        if (DataManager.gainExp(5)) { // ★Boost: 5 EXP per kill
             this.updateHUD();
             this.showMessageFloat("LEVEL UP!");
         }
