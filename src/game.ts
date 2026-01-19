@@ -1259,11 +1259,21 @@ class GameScene extends Phaser.Scene {
     constructor() { super('game-scene'); }
 
     create() {
+        // ★重要: シーン開始時に前の残骸を全て消去 (プレイヤーが分身するバグ対策)
+        this.children.removeAll();
+
         // ★重要: HTMLのオーバーレイ（ショップなどのUI）が残っていると操作不能になるため強制削除
         document.querySelectorAll('.cyber-overlay').forEach(el => el.remove());
 
         // ★重要: 物理エンジンを確実に再開させる
         this.physics.resume();
+
+        // ★重要: メンバ変数の初期化 (再開時に前の状態が残るのを防ぐ)
+        this.itemButtons = [];
+        this.skillButtons = [];
+        this.itemLabels = [];
+        this.skillLabels = [];
+        this.gameOverText = null;
 
         this.isInvincible = false; this.killCount = 0; this.isBossActive = false; this.bossObject = null; this.speedBuffActive = false;
         const stage = DataManager.currentStage;
