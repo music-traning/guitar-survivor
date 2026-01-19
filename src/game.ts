@@ -1317,7 +1317,8 @@ class GameScene extends Phaser.Scene {
 
         this.enemyBullets = this.physics.add.group();
 
-        const spawnDelay = Math.max(100, 600 - (stage * 50));
+        // Limit max spawn speed (minimum delay 200ms) to prevent crashing or impossible difficulty
+        const spawnDelay = Math.max(250, 800 - (stage * 50));
         this.spawnEvent = this.time.addEvent({ delay: spawnDelay, callback: this.spawnEnemy, callbackScope: this, loop: true });
 
         this.physics.add.overlap(this.bullets, this.enemies, (b, e) => this.hitEnemy(b, e));
@@ -1827,16 +1828,32 @@ class GameScene extends Phaser.Scene {
         this.scene.start('map-scene');
     }
 
+    private gameOverText: Phaser.GameObjects.Text | null = null;
+
     gameOver() {
         this.physics.pause();
-        this.add.text(this.scale.width / 2, this.scale.height / 2, 'GAME OVER', { fontSize: '64px', color: '#f00', stroke: '#000', strokeThickness: 6 }).setOrigin(0.5).setScrollFactor(0).setDepth(200);
-        DataManager.currentHp = DataManager.maxHp; DataManager.currentMp = DataManager.maxMp;
-        setTimeout(() => this.returnToMap(), 3000);
+        if (this.gameOverText) this.gameOverText.destroy();
+
+        this.gameOverText = this.add.text(this.scale.width / 2, this.scale.height / 2, 'GAME OVER', {
+            fontSize: '64px', color: '#f00', stroke: '#000', strokeThickness: 6
+        }).setOrigin(0.5).setScrollFactor(0).setDepth(200);
+
+        DataManager.currentHp = DataManager.maxHp;
+        DataManager.currentMp = DataManager.maxMp;
+
+        // Use Phaser timer instead of setTimeout so it gets cleared on shutdown
+        this.time.delayedCall(3000, () => {
+            this.returnToMap();
+        });
     }
 
     shutdown() {
         // ★重要: シーン終了時に全てのプロセスを完全に停止・破棄する
         try {
+            if (this.gameOverText) {
+                this.gameOverText.destroy();
+                this.gameOverText = null;
+            }
             // 1. Stop all Timers and Tweens
             this.time.removeAllEvents();
             this.tweens.killAll();
