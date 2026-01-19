@@ -1350,6 +1350,12 @@ class GameScene extends Phaser.Scene {
     }
 
     createMobileUI() {
+        // ★重要: UI配列を初期化 (シーン再開時に重複しないように)
+        this.itemButtons = [];
+        this.skillButtons = [];
+        this.itemLabels = [];
+        this.skillLabels = [];
+
         const w = this.scale.width;
         const h = this.scale.height;
         this.joyBase = this.add.circle(100, h - 100, 60, 0x888888, 0.5).setScrollFactor(0).setDepth(100).setVisible(false);
@@ -1816,7 +1822,11 @@ class GameScene extends Phaser.Scene {
         }
     }
 
-    returnToMap() { this.scene.start('map-scene'); }
+    returnToMap() {
+        this.physics.pause();
+        this.scene.start('map-scene');
+    }
+
     gameOver() {
         this.physics.pause();
         this.add.text(this.scale.width / 2, this.scale.height / 2, 'GAME OVER', { fontSize: '64px', color: '#f00', stroke: '#000', strokeThickness: 6 }).setOrigin(0.5).setScrollFactor(0).setDepth(200);
@@ -1825,18 +1835,27 @@ class GameScene extends Phaser.Scene {
     }
 
     shutdown() {
-        // Cleanup Tone.js nodes to prevent memory leak and mobile crash
-        if (this.synth) {
-            try { this.synth.dispose(); } catch (e) {
-                /* ignore */
-            }
-            this.synth = null;
-        }
-        if (this.metalSynth) {
-            try { this.metalSynth.dispose(); } catch (e) {
-                /* ignore */
-            }
-            this.metalSynth = null;
+        // ★重要: シーン終了時に全てのプロセスを完全に停止・破棄する
+        try {
+            // 1. Stop all Timers and Tweens
+            this.time.removeAllEvents();
+            this.tweens.killAll();
+
+            // 2. Clear Physics groups explicitly
+            if (this.enemies) this.enemies.clear(true, true);
+            if (this.bullets) this.bullets.clear(true, true);
+            if (this.enemyBullets) this.enemyBullets.clear(true, true);
+            if (this.loots) this.loots.clear(true, true);
+
+            // 3. Audio Cleanup (Tone.js nodes)
+            if (this.synth) { try { this.synth.dispose(); } catch (e) { } this.synth = null; }
+            if (this.metalSynth) { try { this.metalSynth.dispose(); } catch (e) { } this.metalSynth = null; }
+
+            // 4. Input Cleanup
+            if (this.input.keyboard) this.input.keyboard.removeAllKeys();
+            this.input.removeAllListeners();
+        } catch (e) {
+            console.error("Shutdown Cleanup Error:", e);
         }
     }
 }
