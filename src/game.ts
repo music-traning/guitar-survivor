@@ -214,9 +214,9 @@ S009 Sweep Picking: Area Attack (Active).</p>
 `;
 
 function openHelpModal() {
-    const lang = GameDataManager.instance.language;
-    const content = lang === 'ja' ? MANUAL_JA : MANUAL_EN;
-    const title = lang === 'ja' ? "MANUAL" : "MANUAL";
+    const lang = DataManager.language; // Use global DataManager instance
+    const contentText = lang === 'ja' ? MANUAL_JA : MANUAL_EN;
+    const title = "MANUAL";
 
     const overlay = document.createElement('div');
     overlay.className = 'cyber-overlay';
@@ -225,23 +225,62 @@ function openHelpModal() {
     panel.className = 'cyber-panel';
     panel.style.width = '600px';
     panel.style.maxWidth = '90%';
+    panel.style.display = 'flex';
+    panel.style.flexDirection = 'column';
+    panel.style.overflow = 'hidden'; // Prevent full panel scroll
 
-    panel.innerHTML = `
-        <h2 class="cyber-title">${title}</h2>
-        <div style="text-align:left; line-height:1.6; max-height:60vh; overflow-y:auto; padding-right:10px;">
-            ${content}
-        </div>
-        <div style="text-align:center; margin-top:20px;">
-            <button class="cyber-btn" id="help-close-btn">CLOSE</button>
-        </div>
-    `;
+    // Header
+    const headerRow = document.createElement('div');
+    headerRow.style.display = 'flex';
+    headerRow.style.justifyContent = 'space-between';
+    headerRow.style.alignItems = 'center';
+    headerRow.style.marginBottom = '20px';
+    headerRow.style.borderBottom = '2px solid var(--neon-pink)';
+    headerRow.style.paddingBottom = '5px';
+
+    const h2 = document.createElement('h2');
+    h2.innerText = title;
+    h2.className = 'cyber-title';
+    h2.style.borderBottom = 'none';
+    h2.style.marginBottom = '0';
+    h2.style.paddingBottom = '0';
+    h2.style.flex = '1'; // Take available space
+    headerRow.appendChild(h2);
+
+    const closeBtnTop = document.createElement('button');
+    closeBtnTop.innerText = lang === 'ja' ? '出る' : 'LEAVE';
+    closeBtnTop.className = 'cyber-btn danger';
+    closeBtnTop.style.marginLeft = '10px'; // Gap
+    closeBtnTop.onclick = () => overlay.remove();
+    headerRow.appendChild(closeBtnTop);
+
+    panel.appendChild(headerRow);
+
+    // Content
+    const contentDiv = document.createElement('div');
+    contentDiv.style.textAlign = 'left';
+    contentDiv.style.lineHeight = '1.6';
+    contentDiv.style.maxHeight = '60vh';
+    contentDiv.style.overflowY = 'auto'; // Scroll content only
+    contentDiv.style.paddingRight = '10px';
+    contentDiv.innerHTML = contentText;
+    panel.appendChild(contentDiv);
+
+    // Footer
+    const footer = document.createElement('div');
+    footer.style.textAlign = 'center';
+    footer.style.marginTop = '20px';
+
+    const closeBtnBottom = document.createElement('button');
+    closeBtnBottom.innerText = 'CLOSE';
+    closeBtnBottom.className = 'cyber-btn';
+    closeBtnBottom.onclick = () => overlay.remove();
+    footer.appendChild(closeBtnBottom);
+
+    panel.appendChild(footer);
 
     overlay.appendChild(panel);
     document.body.appendChild(overlay);
-
-    document.getElementById('help-close-btn')!.onclick = () => {
-        overlay.remove();
-    };
 }
 
 // ★データ管理 (変数定義漏れ修正済み)
@@ -453,7 +492,10 @@ class GameDataManager {
                 break;
             }
         }
-        if (sold > 0) this.save();
+        if (sold > 0) {
+            this.money += gained; // ★重要: 売却金を所持金に加算
+            this.save();
+        }
         return gained;
     }
 
@@ -500,7 +542,8 @@ class GameDataManager {
         if (this.playerExp >= this.nextLevelExp) {
             this.playerLevel++;
             this.playerExp = 0;
-            this.nextLevelExp = Math.ceil(this.nextLevelExp * 1.5);
+            // Leveling Curve eased: 1.5 -> 1.2
+            this.nextLevelExp = Math.ceil(this.nextLevelExp * 1.2);
             this.maxHp += 10; this.maxMp += 5;
             this.currentHp = this.maxHp; this.currentMp = this.maxMp;
             this.save();
@@ -1761,6 +1804,9 @@ class GameScene extends Phaser.Scene {
     }
 
 
+    // (Misplaced gainExp removed)
+
+    // In GameScene
     hitEnemy(bullet: any, enemy: any) {
         bullet.destroy();
 
@@ -1779,14 +1825,16 @@ class GameScene extends Phaser.Scene {
             return;
         }
 
-        if (Math.random() < 0.2) this.spawnLoot(enemy.x, enemy.y);
-        else {
-            DataManager.money += 10;
-            if (DataManager.gainExp(1)) {
-                this.updateHUD();
-                this.showMessageFloat("LEVEL UP!");
-            }
+        // Always give rewards
+        DataManager.money += 10;
+        if (DataManager.gainExp(1)) {
+            this.updateHUD();
+            this.showMessageFloat("LEVEL UP!");
         }
+
+        // Chance for loot
+        if (Math.random() < 0.2) this.spawnLoot(enemy.x, enemy.y);
+
         this.playRandomLick();
         this.tweens.add({ targets: enemy, scale: 0, duration: 200, onComplete: () => enemy.destroy() });
 
