@@ -1253,12 +1253,15 @@ class GameScene extends Phaser.Scene {
     // Boss & Buffs
     private isBossActive: boolean = false;
     private bossObject: Phaser.Physics.Arcade.Image | null = null;
-    private spawnEvent!: Phaser.Time.TimerEvent;
+    // private spawnEvent!: Phaser.Time.TimerEvent; // Removed unused property
     private speedBuffActive: boolean = false;
 
     constructor() { super('game-scene'); }
 
+    private isGameActive: boolean = false;
+
     create() {
+        this.isGameActive = true;
         // ★重要: タイマーとツイーンを完全リセット (敵の重なり・増殖バグの完全修正)
         this.time.removeAllEvents();
         this.tweens.killAll();
@@ -1277,7 +1280,7 @@ class GameScene extends Phaser.Scene {
         this.skillButtons = [];
         this.itemLabels = [];
         this.skillLabels = [];
-        this.gameOverText = null;
+        // this.gameOverText = null; // This property does not exist in the provided code snippet, keeping it commented out as per instruction.
 
         this.isInvincible = false; this.killCount = 0; this.isBossActive = false; this.bossObject = null; this.speedBuffActive = false;
         const stage = DataManager.currentStage;
@@ -1331,9 +1334,8 @@ class GameScene extends Phaser.Scene {
 
         this.enemyBullets = this.physics.add.group();
 
-        // Limit max spawn speed (minimum delay 200ms) to prevent crashing or impossible difficulty
-        const spawnDelay = Math.max(250, 800 - (stage * 50));
-        this.spawnEvent = this.time.addEvent({ delay: spawnDelay, callback: this.spawnEnemy, callbackScope: this, loop: true });
+        // ★修正: 再帰的なスポーンループを開始 (TimerEventのループは使わない)
+        this.spawnLoop();
 
         this.physics.add.overlap(this.bullets, this.enemies, (b, e) => this.hitEnemy(b, e));
         this.physics.add.overlap(this.player, this.loots, (_, l) => this.pickLoot(l));
@@ -1362,6 +1364,35 @@ class GameScene extends Phaser.Scene {
                 this.input.keyboard!.addKey(code).on('down', () => this.useConsumable(i));
             });
         }
+    }
+
+    spawnLoop() {
+        if (!this.isGameActive) return;
+        if (this.isBossActive) return; // Bossがいるときは雑魚を止める（必要ならここを調整）
+
+        this.spawnEnemy();
+
+        const stage = DataManager.currentStage;
+        // Delay: Stage1=1000ms, Stage10=550ms. Min 300ms.
+        const delay = Math.max(300, 1000 - (stage * 50));
+        this.time.delayedCall(delay, this.spawnLoop, [], this);
+    }
+
+    spawnEnemy() {
+        if (!this.isGameActive) return;
+        const w = this.scale.width; const h = this.scale.height;
+        // Count check to prevent infinite overflow if player hides
+        if (this.enemies.getLength() > 50) return;
+
+        let x, y;
+        const side = Phaser.Math.Between(0, 3);
+        switch (side) {
+            case 0: x = -50; y = Phaser.Math.Between(0, h); break;
+            case 1: x = w + 50; y = Phaser.Math.Between(0, h); break;
+            case 2: x = Phaser.Math.Between(0, w); y = -50; break;
+            case 3: x = Phaser.Math.Between(0, w); y = h + 50; break;
+        }
+        this.enemies.create(x, y, 'enemy').setScale(2);
     }
 
     createMobileUI() {
@@ -1659,25 +1690,9 @@ class GameScene extends Phaser.Scene {
     }
 
 
-    spawnEnemy() {
-        if (this.isBossActive) return;
-        const w = this.scale.width; const h = this.scale.height;
-
-        let x, y;
-        const side = Phaser.Math.Between(0, 3);
-        switch (side) {
-            case 0: x = -50; y = Phaser.Math.Between(0, h); break; // Left
-            case 1: x = w + 50; y = Phaser.Math.Between(0, h); break; // Right
-            case 2: x = Phaser.Math.Between(0, w); y = -50; break; // Top
-            case 3: x = Phaser.Math.Between(0, w); y = h + 50; break; // Bottom
-        }
-
-        this.enemies.create(x, y, 'enemy').setScale(2);
-    }
-
     spawnBoss() {
         this.isBossActive = true;
-        this.spawnEvent.remove();
+        // this.spawnEvent.remove(); // No longer needed with loop logic
         this.enemies.clear(true, true);
         const w = this.scale.width;
         this.bossObject = this.physics.add.image(w / 2, -100, 'boss').setScale(3);
@@ -1862,6 +1877,7 @@ class GameScene extends Phaser.Scene {
     private gameOverText: Phaser.GameObjects.Text | null = null;
 
     gameOver() {
+        this.isGameActive = false; // ★Stop spawning
         this.physics.pause();
         if (this.gameOverText) this.gameOverText.destroy();
 
@@ -1879,6 +1895,7 @@ class GameScene extends Phaser.Scene {
     }
 
     shutdown() {
+        this.isGameActive = false; // ★Stop spawning
         // ★重要: シーン終了時に全てのプロセスを完全に停止・破棄する
         try {
             if (this.gameOverText) {
