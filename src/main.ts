@@ -1228,7 +1228,11 @@ class GameScene extends Phaser.Scene {
         if (Tone) {
             Tone.Destination.volume.value = -20;
             const lowPass = new Tone.Filter(1000, "lowpass").toDestination();
-            this.synth = new Tone.PolySynth(Tone.Synth, { volume: -5, oscillator: { type: "sine" } }).connect(new Tone.Reverb({ wet: 0.5 }).connect(lowPass));
+            // Reverb（重い処理）を削除し、直接ローパスフィルタに繋ぐ
+            this.synth = new Tone.PolySynth(Tone.Synth, {
+                volume: -5, 
+                oscillator: { type: "sine" }
+             }).connect(lowPass);
             this.metalSynth = new Tone.PolySynth(Tone.MembraneSynth, { volume: -10 }).connect(lowPass);
         }
 
@@ -1546,6 +1550,13 @@ class GameScene extends Phaser.Scene {
             this.bossFire();
             this.bossLastFired = time;
         }
+
+        this.bullets.children.each((b: any) => {
+    if (b.active && (b.x < -100 || b.x > this.scale.width + 100 || b.y < -100 || b.y > this.scale.height + 100)) {
+        b.destroy();
+    }
+    return true; // nullを返さないためのダミー
+});
     }
 
     spawnEnemy() {
