@@ -1,3 +1,6 @@
+import { inject } from '@vercel/analytics';
+inject();
+
 import './style.css';
 import Phaser from 'phaser';
 import * as Tone from 'tone'; // ★Revert to static import for stability
