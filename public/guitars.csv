@@ -1,0 +1,31 @@
+id,name_en,name_ja,tags,speed,rate,price,description_ja,description_en
+G000,Old Acoustic,古いアコギ,Cheap,110,800,0,実家の押入れにあった弦高の高いアコギ。指が痛い。,Old acoustic guitar from the closet. High action hurts fingers.
+G001,Photogenic ST,Photogenic ST,SingleCoil,130,650,5000,通販で買った初心者セットのギター。調整が必要。,Beginner set guitar bought online. Needs adjustment.
+G002,Bizarre Gtr,ビザールギター,Unique,120,700,8000,60年代の謎のビザールギター。音がペラペラ。,Mysterious 60s bizarre guitar. Thin sound.
+G003,Squier Strat,Squier Strat,SingleCoil,140,600,25000,コストパフォーマンスに優れた最初の相棒。,Great value first partner.
+G004,Epiphone LP,Epiphone LP,Humbucker,120,680,30000,太い音が出るが入門機。ヘッド落ちしやすい。,Entry-level but big sound. Prone to neck dive.
+G005,Yamaha Pacifica,Yamaha Pacifica,SingleCoil|Humbucker,150,550,35000,優等生。どんなジャンルもこなす万能機。,The honor student. Versatile for any genre.
+G006,Fernandes ZO-3,ZO-3,Unique,140,600,38000,アンプ内蔵の象さんギター。どこでも練習できる。,Elephant guitar with built-in amp. Practice anywhere.
+G007,Fender Mex Strat,Fender Mex Strat,SingleCoil,160,500,80000,メキシコ製。ライブで十分使えるクオリティ。,Made in Mexico. Quality enough for gigs.
+G008,Ibanez RG,Ibanez RG,Humbucker|Metal,165,450,90000,極薄ネックで速弾きに特化したギター。,Ultra-thin neck specialized for shredding.
+G009,Fender JP Jazzmaster,Fender JP JM,SingleCoil|Jazz,155,550,110000,日本製ジャズマス。独特の倍音と揺らぎ。,Japanese Jazzmaster. Unique overtones and shimmer.
+G010,Gibson SG Std,Gibson SG Std,Humbucker,160,500,140000,軽量でハイポジションが弾きやすいロックな一本。,Lightweight, rock-oriented, and easy to play high frets.
+G011,Fender USA Tele,Fender USA Tele,SingleCoil|Twang,170,450,180000,本場のアメリカン・テレキャス。鋭い切れ味。,Authentic American Telecaster. Sharp cutting sound.
+G012,Gibson LP Classic,Gibson LP Classic,Humbucker|Heavy,130,580,220000,スリムネックで弾きやすいレスポール。,Slim neck Les Paul, easy to play.
+G013,Gretsch 6120,Gretsch 6120,Humbucker|Rockabilly,140,600,280000,美しいオレンジ色。ロカビリーの魂。,Beautiful orange. The soul of rockabilly.
+G014,MusicMan Luke,MusicMan Luke,Active|Versatile,165,420,300000,スタジオミュージシャン御用達。完璧なバランス。,Session musician specific. Perfect balance.
+G015,Gibson ES-335,Gibson ES-335,Humbucker|Jazz|Blues,145,550,350000,セミアコの王様。甘く太いトーン。,King of semi-hollows. Sweet and thick tone.
+G016,PRS Custom 24,PRS Custom 24,Humbucker|Versatile,160,480,450000,美しさと機能性を極めた現代の万能機。,Modern versatile machine mastering beauty and function.
+G017,Suhr Modern,Suhr Modern,Humbucker|Shred,175,400,500000,最高峰のプレイヤビリティ。勝手に指が動く。,Peak playability. Fingers move on their own.
+G018,Tom Anderson,Tom Anderson,SingleCoil|Versatile,170,430,550000,スイッチ一つで多彩な音色を作るハイエンド機。,High-end machine creating varied tones with a switch.
+G019,Gibson L5 CES,Gibson L5 CES,Humbucker|Jazz,110,650,800000,ジャズギターの皇帝。フルアコの完成形。,Emperor of jazz guitar. The perfection of full-hollow.
+G020,Fender CS Strat 60s,Fender CS Strat,SingleCoil|Vintage,180,450,600000,カスタムショップ製。枯れた鈴鳴りサウンド。,Custom Shop made. Withered bell-like sound.
+G021,Gibson '59 LP Reissue,'59 LP Reissue,Humbucker|Vintage,140,500,850000,至高のバースト・レスポール。太く抜ける音。,Supreme Burst Les Paul. Thick cutting sound.
+G022,D'Angelico NY,D'Angelico NY,Jazz|Acoustic,120,700,1200000,アール・デコの芸術品。,Art Deco masterpiece.
+G023,Travis Bean,Travis Bean,Metal|Unique,130,550,400000,アルミネックの金属的なサスティーン。,Metallic sustain of the aluminum neck.
+G024,Steinberger,Steinberger,Unique|Shred,160,450,250000,ヘッドレス。人間工学に基づいたデザイン。,Headless. Ergonomic design.
+G025,Rickenbacker 360,Rickenbacker 360,Unique|Jangle,150,600,320000,12弦のような煌びやかなサウンド。,Sparkling sound like a 12-string.
+G026,Flying V,Flying V,Humbucker|Metal,150,520,190000,変形ギターの元祖。座って弾くのは難しい。,The original exotic shape. Hard to play sitting down.
+G027,SRV Strat,SRV Strat,SingleCoil|Blues,155,480,250000,極太弦を張るために調整されたシグネチャー。,Signature adjusted for super heavy strings.
+G028,Gold Top P90,Gold Top P90,SingleCoil|Vintage,135,580,380000,シングルコイルの歯切れとハムの太さを両立。,Crispness of single coil and thickness of humbucker.
+G029,Ken Smith Bass,Ken Smith Bass,Unique|LowEnd,100,900,1000000,間違えて仕入れた6弦ベース。弾が極大になる。,6-string bass bought by mistake. Bullets become huge.

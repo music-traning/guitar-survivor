@@ -1,0 +1,51 @@
+id,name_en,name_ja,category,effectType,value,price,rarity,description_ja,description_en
+I001,Cheap Pick,安いピック,accessory,rate,0.98,20,common,安いピック。消耗品ではないがすぐ削れる。,A cheap pick. Not a consumable but wears out quickly.
+I002,Energy Drink,エナジードリンク,consumable,heal_hp,50,100,common,コンビニのエナドリ。HPを50回復。,Energy drink from a convenience store. Recovers 50 HP.
+I003,Black Coffee,ブラックコーヒー,consumable,heal_mp,30,120,common,ブラックコーヒー。集中力を高めMPを30回復。,Black coffee. Increases focus and recovers 30 MP.
+I004,Tortex 0.88mm,Tortex 0.88mm,accessory,rate,0.95,100,common,緑色の亀。標準的な使い心地。,Green turtle pick. Standard feel.
+I005,Fast Fret,フィンガーイーズ,consumable,buff_speed,20,500,common,指板潤滑剤。一時的にスピードアップ。,Fretboard lubricant. Temporarily increases speed.
+I006,Jazz III Red,Jazz III Red,accessory,rate,0.85,150,common,速弾きギタリストの定番。,A standard for shred guitarists.
+I007,Band Aid,バンドエイド,consumable,heal_hp,20,50,common,指の怪我を保護。HPを20回復。,Protects finger injuries. Recovers 20 HP.
+I008,Pro Protein,プロテイン,consumable,heal_hp,100,300,common,プロテイン。筋肉を補修しHPを100回復。,Protein. Repairs muscles and recovers 100 HP.
+I009,Music Theory Book,楽典,consumable,heal_mp,100,500,common,楽典。知識を補給しMPを100回復。,Music theory book. Replenishes knowledge and recovers 100 MP.
+I010,ErnieBall 09-42,ErnieBall 09-42,accessory,speed,10,600,common,スーパー・スリンキー。柔らかくて速い。,Super Slinky. Soft and fast.
+I011,D'Addario 10-46,D'Addario 10-46,accessory,size,2,700,common,世界標準の弦。,World standard strings.
+I012,Elixir Nanoweb,Elixir Nanoweb,accessory,rate,0.9,1500,common,コーティング弦。長持ちする。,Coated strings. Long lasting.
+I013,Finger Ease,潤滑スプレー,consumable,buff_speed,30,200,common,スプレー式潤滑剤。滑りが良くなる。,Spray lubricant. Improves sliding.
+I014,9V Battery,9V電池,consumable,heal_mp,50,250,common,エフェクター用電池。MP(機材のパワー)を50回復。,Battery for effects. Recovers 50 MP (Gear Power).
+I015,Fret Wrap,フレットラップ,accessory,rate,0.92,1200,common,余計な倍音をミュート。,Mutes unwanted overtones.
+I016,Capotasto,カポタスト,accessory,speed,10,1500,common,キーを変える道具。,Tool to change keys.
+I017,Slide Bar,スライドバー,accessory,speed,15,1800,common,ガラス製のスライドバー。,Glass slide bar.
+I018,Power Supply,パワーサプライ,accessory,heal_mp,5,5000,rare,安定した電源。MP回復効率アップ(擬似)。,Stable power supply. Improves MP recovery efficiency (Simulated).
+I019,Clip Tuner,クリップチューナー,accessory,rate,0.95,1000,common,ヘッドに挟むチューナー。,Clip-on tuner for the headstock.
+I020,Metronome,メトロノーム,accessory,speed,5,1000,common,リズムキープのお供。,Companion for keeping rhythm.
+E001,BOSS SD-1,BOSS SD-1,effect,rate,0.8,6000,common,黄色いオーバードライブ。,Yellow overdrive.
+E002,BOSS BD-2,BOSS BD-2,effect,speed,20,9000,common,ブルースドライバー。,Blues Driver.
+E003,Ibanez TS9,Ibanez TS9,effect,rate,0.75,12000,common,チューブスクリーマー。,Tube Screamer.
+E004,ProCo RAT,ProCo RAT,effect,size,10,11000,common,粗い粒立ちのディストーション。,Rough-grained distortion.
+E005,MXR DynaComp,MXR DynaComp,effect,rate,0.7,10000,common,パコパコ系コンプ。,Percessive compressor.
+E006,EHX BigMuff,EHX BigMuff,effect,size,25,14000,common,轟音ファズ。,Roaring fuzz.
+E007,Fuzz Face,Fuzz Face,effect,size,20,18000,rare,ジミヘンが愛した丸いファズ。,Round fuzz loved by Jimi.
+E008,BOSS CE-2w,BOSS CE-2w,effect,speed,30,22000,rare,技クラフトのコーラス。,Waza Craft Chorus.
+E009,Phase 90,Phase 90,effect,speed,25,10000,common,オレンジ色のフェイザー。,Orange phaser.
+E010,Cry Baby Wah,Cry Baby Wah,effect,speed,40,13000,common,ワウペダル。,Wah pedal.
+E011,DigiTech Whammy,DigiTech Whammy,effect,rate,0.6,25000,rare,ピッチを急変させる。,Rapidly changes pitch.
+E012,Line6 DL4,Line6 DL4,effect,rate,0.65,28000,rare,多機能ディレイ。,Multi-function delay.
+E013,Strymon Timeline,Strymon Timeline,effect,rate,0.55,45000,rare,空間系最強のディレイ。,The ultimate delay for ambient sounds.
+E014,Vemuram Jan Ray,Jan Ray,effect,speed,50,48000,rare,高級オーバードライブ。,High-end overdrive.
+E015,KLON Centaur,Centaur,effect,rate,0.4,500000,legendary,伝説のケンタウルス。神器。,Legendary Centaur. A sacred treasure.
+E016,BOSS MT-2,BOSS MT-2,effect,size,15,8000,common,メタルゾーン。,Metal Zone.
+E017,Korg Miku Stomp,Miku Stomp,effect,size,30,15000,rare,ギターの音がミクになる。,Turns guitar sound into Miku.
+E018,Talk Box,Talk Box,effect,size,12,20000,rare,ホースを咥えて喋るエフェクター。,Effector you speak into with a hose.
+E019,Eventide H9,Eventide H9,effect,speed,60,60000,rare,あらゆる空間系を網羅。,Covers all spatial effects.
+E020,Fractal Axe-Fx,Fractal Axe-Fx,effect,rate,0.3,350000,legendary,ラック式アンプシミュレーター。,Rack-mount amp simulator.
+I021,Magic Potion,魔法の薬,consumable,heal_mp,999,5000,rare,全回復の秘薬。,Elixir of full recovery.
+I022,Elixir of Life,生命の秘薬,consumable,heal_hp,999,5000,rare,完全回復の秘薬。,Elixir of complete recovery.
+I023,Pick of Destiny,運命のピック,accessory,rate,0.1,100000,legendary,悪魔の力が宿るピック。超速連射。,Pick with demonic power. Super rapid fire.
+I024,Dragon Strap,ドラゴンのストラップ,accessory,size,50,80000,legendary,竜の革で作られたストラップ。,Strap made of dragon leather.
+I025,Phoenix Capo,不死鳥のカポ,accessory,speed,100,120000,legendary,不死鳥の羽を使用したカポ。爆速。,Capo using phoenix feathers. Explosive speed.
+I026,Vacuum Tube 12AX7,真空管 12AX7,accessory,size,15,15000,rare,ヴィンテージ真空管。音が太くなる。,Vintage vacuum tube. Thickens the sound.
+I027,Gold Jack,ゴールドジャック,accessory,rate,0.9,20000,rare,金メッキジャック。伝導率アップ。,Gold-plated jack. Increased conductivity.
+I028,Blue Chip Pick,高級ピック,accessory,rate,0.8,8000,rare,一枚数千円する高級ピック。,High-end pick costing thousands of yen.
+I029,Wireless Unit,ワイヤレス,accessory,speed,30,30000,rare,シールドから解放される自由。,Freedom from cables.
+I030,Ear Monitor,イヤモニ,accessory,rate,0.85,40000,rare,正確なモニタリング環境。,Accurate monitoring environment.

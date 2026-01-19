@@ -1,0 +1,160 @@
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@500;600;700&display=swap');
+
+:root {
+  --neon-blue: #00f3ff;
+  --neon-pink: #bc13fe;
+  --neon-yellow: #f9e504;
+  --neon-green: #0aff0a;
+  --bg-dark: #050510;
+  --bg-panel: rgba(10, 15, 30, 0.85);
+  --glass-border: 1px solid rgba(0, 243, 255, 0.3);
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  background-color: var(--bg-dark);
+  color: #fff;
+  font-family: 'Rajdhani', sans-serif;
+  overflow: hidden;
+  background-image:
+    linear-gradient(rgba(0, 243, 255, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 243, 255, 0.03) 1px, transparent 1px);
+  background-size: 30px 30px;
+}
+
+canvas {
+  display: block;
+  /* box-shadow: 0 0 50px rgba(0,0,0,0.5); Performance fix */
+}
+
+/* --- Common Cyberpunk UI Classes --- */
+.cyber-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.85);
+  backdrop-filter: blur(5px);
+  z-index: 2000;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.cyber-panel {
+  background: var(--bg-panel);
+  border: 1px solid var(--neon-blue);
+  box-shadow: 0 0 15px rgba(0, 243, 255, 0.2), inset 0 0 20px rgba(0, 243, 255, 0.05);
+  color: #fff;
+  padding: 30px;
+  max-width: 90%;
+  max-height: 90vh;
+  overflow-y: auto;
+  position: relative;
+  /* Cut corners effect */
+  clip-path: polygon(20px 0, 100% 0,
+      100% calc(100% - 20px), calc(100% - 20px) 100%,
+      0 100%, 0 20px);
+}
+
+/* Corner accents */
+.cyber-panel::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 20px;
+  height: 2px;
+  background: var(--neon-blue);
+}
+
+.cyber-panel::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: 20px;
+  height: 2px;
+  background: var(--neon-blue);
+}
+
+.cyber-title {
+  font-family: 'Orbitron', sans-serif;
+  color: var(--neon-yellow);
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  text-shadow: 0 0 10px rgba(249, 229, 4, 0.5);
+  border-bottom: 2px solid var(--neon-pink);
+  margin-bottom: 20px;
+  padding-bottom: 5px;
+}
+
+.cyber-btn {
+  background: transparent;
+  border: 1px solid var(--neon-blue);
+  color: var(--neon-blue);
+  padding: 8px 20px;
+  font-family: 'Orbitron', sans-serif;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  text-transform: uppercase;
+  margin: 5px;
+  position: relative;
+  overflow: hidden;
+}
+
+.cyber-btn:hover {
+  background: var(--neon-blue);
+  color: #000;
+  box-shadow: 0 0 15px var(--neon-blue);
+}
+
+.cyber-btn.danger {
+  border-color: var(--neon-pink);
+  color: var(--neon-pink);
+}
+
+.cyber-btn.danger:hover {
+  background: var(--neon-pink);
+  color: #fff;
+  box-shadow: 0 0 15px var(--neon-pink);
+}
+
+.item-list-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 10px;
+  transition: background 0.2s;
+}
+
+.item-list-row:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+/* --- Scrollbar --- */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #111;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--neon-blue);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #fff;
+}
+
+/* Keep existing helpers if needed */
+.hidden {
+  display: none !important;
+}

@@ -1,0 +1,21 @@
+id,name_en,name_ja,reqLevel,price,mpCost,description_ja,description_en
+S001,Down Picking,ダウンピッキング,2,500,0,ダウンピッキングのみ。基礎動作(Speed+)。,Down picking only. Basic movement (Speed+).
+S002,Hammer-On,ハンマリング,3,1000,0,叩いて音を出す(Rate+)。,Hammering on to make sound (Rate+).
+S003,Pull-Off,プリング,4,1000,0,弾いて音を出す(Rate+)。,Pulling off to make sound (Rate+).
+S004,Alternate Picking,オルタネイト,5,2500,0,ダウンアップ交互(Rate++)。,Alternate down and up (Rate++).
+S005,Muting,ミュート,6,2000,0,ノイズ低減(Accuracy+)。,Noise reduction (Accuracy+).
+S006,Vibrato,ビブラート,8,3500,5,音を揺らす。MPを少し消費して速度アップ。,Vibrate the sound. Consumes MP to speed up.
+S007,Power Chord,パワーコード,10,4000,10,力強いリフ。弾サイズアップ。,Powerful riffs. Bullet size up.
+S008,Pentatonic Scale,ペンタトニック,12,5000,0,アドリブの基礎(Speed++)。,Foundation of improvisation (Speed++).
+S009,Sweep Picking,スウィープ,15,10000,30,【Active】SPACEキーで範囲攻撃。MP消費大。,[Active] Area attack with SPACE key. High MP cost.
+S010,Tapping,タッピング,18,12000,0,右手タッピング(Rate+++)。,Right hand tapping (Rate+++).
+S011,String Skipping,ストリングスキップ,20,15000,0,弦飛び(Speed+++)。,String skipping (Speed+++).
+S012,Chicken Picking,チキンピッキング,22,14000,0,カントリー奏法(Rate++)。,Country style (Rate++).
+S013,Dorian Mode,ドリアンモード,25,20000,10,お洒落な響き(Passive Buff)。,Stylish sound (Passive Buff).
+S014,Triad Pairs,トライアドペア,28,25000,15,3和音連結(Rate+++)。,Triad connection (Rate+++).
+S015,Chromatic Approach,クロマチック,30,30000,20,半音階アプローチ(Critical+)。,Chromatic approach (Critical+).
+S016,Wholetone Scale,ホールトーン,33,35000,25,全音音階(Speed Max)。,Whole tone scale (Speed Max).
+S017,Altered Scale,オルタード,36,40000,30,オルタード(Size Max)。,Altered scale (Size Max).
+S018,Coltrane Changes,コルトレーンチェンジ,40,50000,50,転調の嵐(Rate Max)。,Storm of modulation (Rate Max).
+S019,Negative Harmony,ネガティヴハーモニー,45,80000,80,ネガティヴ・ハーモニー(All Stats++)。,Negative Harmony (All Stats++).
+S020,Absolute Pitch,絶対音感,50,100000,100,絶対音感(God Mode)。,Absolute pitch (God Mode).
