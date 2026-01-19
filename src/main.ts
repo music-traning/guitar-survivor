@@ -1226,14 +1226,22 @@ class GameScene extends Phaser.Scene {
         this.stats = DataManager.calculateStats();
 
         if (Tone) {
-            Tone.Destination.volume.value = -20;
-            const lowPass = new Tone.Filter(1000, "lowpass").toDestination();
-            // Reverb（重い処理）を削除し、直接ローパスフィルタに繋ぐ
+            Tone.Destination.volume.value = -10;
+            // Simplify Audio Graph for Mobile
+            // Use a single PolySynth with limited capacity
+            const lowPass = new Tone.Filter(3000, "lowpass").toDestination();
+
             this.synth = new Tone.PolySynth(Tone.Synth, {
-                volume: -5, 
-                oscillator: { type: "sine" }
-             }).connect(lowPass);
-            this.metalSynth = new Tone.PolySynth(Tone.MembraneSynth, { volume: -10 }).connect(lowPass);
+                volume: -10,
+                oscillator: { type: "triangle" },
+                envelope: { attack: 0.01, decay: 0.1, sustain: 0.1, release: 0.5 }
+            }).connect(lowPass);
+            this.synth.maxPolyphony = 4;
+
+            this.metalSynth = new Tone.PolySynth(Tone.MembraneSynth, {
+                volume: -10
+            }).connect(lowPass);
+            this.metalSynth.maxPolyphony = 2;
         }
 
         const w = this.scale.width;
@@ -1551,19 +1559,20 @@ class GameScene extends Phaser.Scene {
             this.bossLastFired = time;
         }
 
+        // Cleanup Logic Optimized
         this.bullets.children.each((b: any) => {
-    if (b.active && (b.x < -100 || b.x > this.scale.width + 100 || b.y < -100 || b.y > this.scale.height + 100)) {
-        b.destroy();
+            if (b.active && (b.x < -100 || b.x > this.scale.width + 100 || b.y < -100 || b.y > this.scale.height + 100)) {
+                b.destroy();
+            }
+            return true;
+        });
     }
-    return true; // nullを返さないためのダミー
-});
-    }
+
 
     spawnEnemy() {
         if (this.isBossActive) return;
         const w = this.scale.width; const h = this.scale.height;
 
-        // ★Spawn from 4 directions
         let x, y;
         const side = Phaser.Math.Between(0, 3);
         switch (side) {
@@ -1587,6 +1596,7 @@ class GameScene extends Phaser.Scene {
         this.showMessageFloat("BOSS APPEARED!");
         this.synth.triggerAttackRelease(["C2", "G2"], "2n");
     }
+
 
     hitEnemy(bullet: any, enemy: any) {
         bullet.destroy();
@@ -1670,21 +1680,49 @@ class GameScene extends Phaser.Scene {
 
     getNearestEnemy(): Phaser.GameObjects.GameObject | null {
         if (this.isBossActive && this.bossObject) return this.bossObject;
-        let nearestDist = Infinity; let nearestEnemy = null;
-        this.enemies.getChildren().forEach((e: any) => {
-            const d = Phaser.Math.Distance.Between(this.player.x, this.player.y, e.x, e.y);
-            if (d < nearestDist) { nearestDist = d; nearestEnemy = e; }
-        });
-        return nearestEnemy;
+        let nearest: any = null;
+        let minDistSq = 1000 * 1000;
+        const px = this.player.x, py = this.player.y;
+        const enemies = this.enemies.getChildren();
+        for (let i = 0; i < enemies.length; i++) {
+            const e: any = enemies[i];
+            if (e.active) {
+                const dx = e.x - px;
+                const dy = e.y - py;
+                const distSq = dx * dx + dy * dy;
+                if (distSq < minDistSq) { minDistSq = distSq; nearest = e; }
+            }
+        }
+        return nearest;
     }
 
     fireBullet(target: any) {
-        const b = this.bullets.create(this.player.x, this.player.y, 'bullet').setTint(0xffff00);
-        b.setScale(this.stats.bulletSize / 10);
-        this.physics.moveToObject(b, target, 400);
-        this.tweens.add({ targets: b, angle: 360, duration: 300, repeat: -1 });
-        this.metalSynth.triggerAttackRelease("G2", "64n", Tone.now() + 0.1, 0.3);
-        this.time.delayedCall(1000, () => b.destroy());
+        const b = this.bullets.create(this.player.x, this.player.y, 'bullet');
+        // Enable world bounds for auto-disable
+        b.body.setCollideWorldBounds(true);
+        b.body.onWorldBounds = true; // Enable event
+
+        // Manual out-of-bounds kill using a timer is safer than physics bounds sometimes for "flying out"
+        // But for performance, let's just use a time-to-live to ensure they don't pile up.
+        this.time.delayedCall(3000, () => { if (b.active) b.destroy(); }); // Hard cap lifetime
+
+        const angle = Phaser.Math.Angle.Between(this.player.x, this.player.y, target.x, target.y);
+        // Reduce speed slightly for stability or keep as is
+        const vec = new Phaser.Math.Vector2(Math.cos(angle), Math.sin(angle)).scale(this.stats.speed + 200);
+        b.setVelocity(vec.x, vec.y);
+        b.setRotation(angle);
+
+        // Tone.js Mobile Optimization: Limit polyphony or skip if too busy
+        if (Tone && Tone.context.state === 'running') {
+            try {
+                // If many bullets, skip sound occasionally
+                if (Math.random() > 0.3) {
+                    this.synth.triggerAttackRelease("C4", "32n", undefined, 0.1);
+                }
+            } catch (e) {
+                // ignore audio errors
+            }
+        }
     }
 
     // ★新規追加: ボスの攻撃ロジック
