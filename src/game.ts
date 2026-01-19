@@ -438,6 +438,25 @@ class GameDataManager {
         return false;
     }
 
+    sellItemBulk(itemId: string, count: number): number {
+        let sold = 0;
+        let gained = 0;
+        for (let i = 0; i < count; i++) {
+            const index = this.inventory.findIndex(inv => inv.id === itemId);
+            if (index > -1) {
+                const item = this.inventory[index];
+                this.inventory.splice(index, 1);
+                gained += Math.floor(item.price / 2);
+                this.shopStock.push(item);
+                sold++;
+            } else {
+                break;
+            }
+        }
+        if (sold > 0) this.save();
+        return gained;
+    }
+
     buyItem(item: ItemData | GuitarData) {
         if ('tags' in item) {
             if (this.currentGuitar) this.shopStock.push(this.currentGuitar);
@@ -1143,6 +1162,7 @@ class MapScene extends Phaser.Scene {
             this.groupItems(DataManager.inventory).forEach(g => {
                 const row = document.createElement('div'); row.className = 'item-list-row';
                 const color = this.getRarityColor(g.item.rarity);
+                const unitPrice = Math.floor(g.item.price / 2);
 
                 row.innerHTML = `
               <div style="flex:1">
@@ -1150,16 +1170,29 @@ class MapScene extends Phaser.Scene {
                 <small>${this.getEffectString(g.item)}</small>
               </div>
               <div>
-                <span style="color:var(--neon-yellow)">${Math.floor(g.item.price / 2)} G</span><br>
-                <button class="cyber-btn danger sell-btn">SELL</button>
+                <span style="color:var(--neon-yellow)">@ ${unitPrice} G</span><br>
+                <div style="display:flex; gap:5px; margin-top:5px;">
+                    <button class="cyber-btn danger sell-1">x1</button>
+                    <button class="cyber-btn danger sell-5" ${g.count < 5 ? 'disabled style="opacity:0.5"' : ''}>x5</button>
+                    <button class="cyber-btn danger sell-all">ALL</button>
+                </div>
               </div>`;
 
-                const btn = row.querySelector('.sell-btn') as HTMLElement;
-                btn.onclick = () => {
-                    if (DataManager.sellItemById(g.item.id)) {
-                        this.showMessage(`Sold for ${Math.floor(g.item.price / 2)}G`, () => { this.updateHeader(); sell(); });
+                const btn1 = row.querySelector('.sell-1') as HTMLElement;
+                const btn5 = row.querySelector('.sell-5') as HTMLElement;
+                const btnAll = row.querySelector('.sell-all') as HTMLElement;
+
+                const doSell = (amt: number) => {
+                    const gained = DataManager.sellItemBulk(g.item.id, amt);
+                    if (gained > 0) {
+                        this.showMessage(`Sold ${amt > g.count ? g.count : amt} items for ${gained}G`, () => { this.updateHeader(); sell(); });
                     }
                 };
+
+                btn1.onclick = () => doSell(1);
+                btn5.onclick = () => doSell(5);
+                btnAll.onclick = () => doSell(g.count);
+
                 listCont.appendChild(row);
             });
         };
@@ -1368,21 +1401,21 @@ class GameScene extends Phaser.Scene {
 
     spawnLoop() {
         if (!this.isGameActive) return;
-        if (this.isBossActive) return; // Bossがいるときは雑魚を止める（必要ならここを調整）
+        if (this.isBossActive) return;
 
         this.spawnEnemy();
 
         const stage = DataManager.currentStage;
-        // Delay: Stage1=1000ms, Stage10=550ms. Min 300ms.
-        const delay = Math.max(300, 1000 - (stage * 50));
+        // Delay logic adjusted: Slower pace. Min 500ms.
+        const delay = Math.max(500, 1500 - (stage * 100));
         this.time.delayedCall(delay, this.spawnLoop, [], this);
     }
 
     spawnEnemy() {
         if (!this.isGameActive) return;
         const w = this.scale.width; const h = this.scale.height;
-        // Count check to prevent infinite overflow if player hides
-        if (this.enemies.getLength() > 50) return;
+        // Strict cap at 30 to prevent overwhelming
+        if (this.enemies.getLength() > 30) return;
 
         let x, y;
         const side = Phaser.Math.Between(0, 3);
