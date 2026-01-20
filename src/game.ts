@@ -104,113 +104,74 @@ function getTxItemDesc(item: ItemData | GuitarData | SkillData | any): string {
 // --- Manual Data ---
 const MANUAL_JA = `
 <h3>1. ゲーム概要 (Game Overview)</h3>
-<p>本アプリケーションは、プレイヤーがギタリストとなり、迫りくる「メトロノーム軍団」をギターサウンド（弾丸）で撃退しながら成長していく2D見下ろし型シューティングRPGです。<br>
-プレイヤーは稼いだ資金で新たなギターを購入し、スキルを習得し、アイテムで身体能力を強化して、最強のギタリストを目指します。</p>
+<p>最強のギタリストとなり、迫りくる「メトロノーム軍団」を撃退せよ！<br>
+稼いだ資金でギターやスキルを購入し、ステージを攻略していく2DアクションRPGです。</p>
 
 <h3>2. 操作方法 (Controls)</h3>
-<p>PCブラウザ環境での操作を前提としています。</p>
+<p><b>スマホ・タブレット (Touch):</b><br>
+<ul>
+    <li><b>移動:</b> 画面の左右どちらかの空きスペースをドラッグ (バーチャルスティック)。<br>
+    ※どちらの手でも操作可能です。</li>
+    <li><b>攻撃:</b> 自動 (Auto Fire)。一番近い敵を狙います。</li>
+    <li><b>スキル:</b> 右下の [S1] [S2] [S3] ボタンをタップ。</li>
+    <li><b>アイテム:</b> 下部の [1] ～ [5] スロットをタップして使用。</li>
+</ul>
+</p>
+<p><b>PC (Keyboard):</b><br>
 <ul>
     <li><b>移動:</b> W, A, S, D または 矢印キー</li>
-    <li><b>攻撃:</b> 自動 (Auto Fire) - 最も近い敵を狙います。</li>
-    <li><b>スキル:</b> SPACE キー (Active Skill)</li>
     <li><b>UI操作:</b> マウス (クリック)</li>
-    <li><b>言語切替:</b> 画面右上ボタン (タイトル画面)</li>
 </ul>
+</p>
 
-<h3>3. 画面表示 (HUD)</h3>
-<p><b>プレイ画面:</b><br>
-HP (赤): 0になるとGAME OVER。<br>
-MP (青): スキル使用で消費。<br>
-Gold: お金。ショップで使用。</p>
+<h3>3. 攻略のヒント (Tips)</h3>
+<p><b>ボス戦 (Boss Battle):</b><br>
+ボスへのダメージは<b>距離が近いほど高く</b>なります。リスクを冒して接近戦を挑みましょう！<br>
+<span style="color:#ff0000">警告:</span> ボスの極太レーザー(赤い予兆)は超危険です。予兆が見えたら軸をずらして回避してください。</p>
 
-<p><b>ショップ (Map上のSHOP):</b><br>
-GUITAR: 武器購入。Rate(連射)などが変化。<br>
-ITEM: 回復・強化アイテム。<br>
-SKILL: パッシブ・アクティブスキルの習得。</p>
-
-<h3>4. ゲームシステム (Mechanics)</h3>
-<p><b>戦闘:</b> 敵(メトロノーム)はプレイヤーに向かってきます。接触するとダメージ(10)。倒すとGoldを落とします。</p>
-<p><b>ステータス:</b><br>
-Speed: 移動速度<br>
-Rate: 連射間隔 (値が小さいほど速い)<br>
-Size: 弾の大きさ<br>
-MP Cost: スキル消費MP</p>
-
-<h3>5. データベース (Database)</h3>
-<p><b>ギター (Weapons):</b><br>
-G000 Old Acoustic: 初期装備。<br>
-G005 Yamaha Pacifica: バランス型。<br>
-G015 Ibanez JEM: 速弾き特化 (Rate:380)。<br>
-G019 Gibson L5 CES: ジャズの皇帝。高威力。<br>
-I023 Pick of Destiny: 連射速度が劇的に向上 (Rate x0.1)。</p>
-
-<p><b>アイテム (Items):</b><br>
-Energy Drink: HP回復。<br>
-Black Coffee: MP回復。<br>
-Pick (各種): 所持でステータス補正。</p>
+<p><b>アイテムスロット (Item Slots):</b><br>
+メニューの「GEAR」→「ITEM SLOTS」で、戦闘中に使うアイテムをセットできます。<br>
+装備したアイテムは、戦闘中画面下のボタンをタップすることで使用可能です。</p>
 
 <p><b>スキル (Skills):</b><br>
-S001 Down Picking: Speed微増。<br>
-S007 Power Chord: 弾サイズUp。<br>
-S009 Sweep Picking: 範囲攻撃 (Active)。</p>
-
-<h3>6. トラブルシューティング</h3>
-<p>HPが0になるとGAME OVERとなり、3秒後にマップへ戻ります。Goldは維持されます。</p>
+スキルには常時発動する「Passive」と、MPを消費して発動する「Active」があります。<br>
+自分のプレイスタイルに合わせて「SKILLS」メニューで装備しましょう。</p>
 `;
 
 const MANUAL_EN = `
 <h3>1. Game Overview</h3>
-<p>This is a top-down 2D shooting RPG where you play as a guitarist repelling the "Metronome Army" with guitar sounds. Buy guitars, learn skills, and become the Legend.</p>
+<p>Become the Guitar Legend! Repel the "Metronome Army" with your shredding skills.<br>
+Buy guitars, learn skills, and conquer the stages in this 2D Action RPG.</p>
 
 <h3>2. Controls</h3>
-<p>Designed for PC Browsers.</p>
+<p><b>Mobile (Touch):</b><br>
+<ul>
+    <li><b>Move:</b> Drag anywhere on the Left or Right empty space (Virtual Stick).<br>
+    *Ambidextrous control supported.</li>
+    <li><b>Attack:</b> Auto-Fire (Targets nearest enemy).</li>
+    <li><b>Skills:</b> Tap [S1] [S2] [S3] buttons at bottom-right.</li>
+    <li><b>Items:</b> Tap [1] - [5] slots at bottom-center.</li>
+</ul>
+</p>
+<p><b>PC (Keyboard):</b><br>
 <ul>
     <li><b>Move:</b> W, A, S, D or Arrow Keys</li>
-    <li><b>Attack:</b> Auto Fire (aims at nearest enemy)</li>
-    <li><b>Skill:</b> SPACE Key (Active Skill)</li>
     <li><b>UI:</b> Mouse Click</li>
-    <li><b>Language:</b> Top-Right Button (Title Screen)</li>
 </ul>
+</p>
 
-<h3>3. HUD</h3>
-<p><b>Game Scene:</b><br>
-HP (Red): Game Over if 0.<br>
-MP (Blue): Consumed by skills.<br>
-Gold: Currency.</p>
+<h3>3. Tips & Tricks</h3>
+<p><b>Boss Battles:</b><br>
+Damage dealt to Bosses increases as you get <b>closer</b>. High risk, high reward!<br>
+<span style="color:#ff0000">WARNING:</span> Watch out for the Boss Laser (Red Line). Dodge sideways immediately!</p>
 
-<p><b>Shop:</b><br>
-GUITAR: Buy weapons (affects Rate/Speed).<br>
-ITEM: Recovery & Buffs.<br>
-SKILL: Learn Passive/Active skills.</p>
-
-<h3>4. Mechanics</h3>
-<p><b>Combat:</b> Enemies chase you. Contact deals 10 damage. Defeat to get Gold.</p>
-<p><b>Stats:</b><br>
-Speed: Movement Speed<br>
-Rate: Fire Interval (Lower is faster)<br>
-Size: Bullet Size<br>
-MP Cost: Mana consumption</p>
-
-<h3>5. Database</h3>
-<p><b>Guitars:</b><br>
-G000 Old Acoustic: Starter.<br>
-G005 Yamaha Pacifica: Balanced.<br>
-G015 Ibanez JEM: Shred specialist (Rate:380).<br>
-G019 Gibson L5 CES: Jazz Emperor.<br>
-I023 Pick of Destiny: Extreme Fire Rate (Rate x0.1).</p>
-
-<p><b>Items:</b><br>
-Energy Drink: Heal HP.<br>
-Black Coffee: Heal MP.<br>
-Picks: Passive stats boost.</p>
+<p><b>Item Slots:</b><br>
+Go to "GEAR" -> "ITEM SLOTS" to equip consumables for battle.<br>
+Tap the slot buttons during combat to use potions or buffs.</p>
 
 <p><b>Skills:</b><br>
-S001 Down Picking: Speed up.<br>
-S007 Power Chord: Bullet Size up.<br>
-S009 Sweep Picking: Area Attack (Active).</p>
-
-<h3>6. Troubleshooting</h3>
-<p>If HP hits 0, it's GAME OVER. You return to Map after 3s. Gold is kept.</p>
+"Passive" skills work automatically. "Active" skills cost MP to trigger.<br>
+Customize your loadout in the "SKILLS" menu.</p>
 `;
 
 function openHelpModal() {
