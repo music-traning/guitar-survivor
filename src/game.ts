@@ -1124,6 +1124,9 @@ class MapScene extends Phaser.Scene {
         ui.content.appendChild(mainArea);
 
         const render = () => {
+            // Save scroll position
+            const scrollPos = ui.content.scrollTop;
+
             mainArea.innerHTML = '';
             const stats = DataManager.calculateStats();
             const isWide = window.innerWidth > 800;
@@ -1455,15 +1458,17 @@ class MapScene extends Phaser.Scene {
                   </div>`;
 
                     const btn = document.createElement('button');
-                    btn.className = 'cyber-btn';
-                    btn.innerText = 'SET';
-                    if (!isEquipped) {
-                        btn.onclick = () => {
+                    btn.className = isEquipped ? 'cyber-btn danger' : 'cyber-btn';
+                    btn.innerText = isEquipped ? 'REMOVE' : 'SET';
+                    btn.onclick = () => {
+                        if (isEquipped) {
+                            const idx = DataManager.equippedSkills.findIndex(s => s.id === skill.id);
+                            if (idx !== -1) DataManager.unequipSkill(idx);
+                            render();
+                        } else {
                             if (DataManager.equipSkill(skill.id)) { render(); } else { this.showMessage("Deck Full"); }
-                        };
-                    } else {
-                        btn.style.visibility = 'hidden';
-                    }
+                        }
+                    };
                     row.appendChild(btn);
                     list.appendChild(row);
                 });
@@ -1471,6 +1476,12 @@ class MapScene extends Phaser.Scene {
             colBag.appendChild(list);
             layout.appendChild(colBag);
             mainArea.appendChild(layout);
+
+            // Restore scroll position
+            // Use setTimeout to allow DOM reflow
+            setTimeout(() => {
+                ui.content.scrollTop = scrollPos;
+            }, 0);
         };
         render();
     }
@@ -1641,11 +1652,20 @@ class GameScene extends Phaser.Scene {
     private metalSynth!: any; // Tone.PolySynth
     private scaleNotes = ["C4", "Eb4", "F4", "G4", "Bb4", "C5", "Eb5", "F5"];
 
-    // Mobile
+    // Touch UI
     private joyBase!: Phaser.GameObjects.Arc;
     private joyThumb!: Phaser.GameObjects.Arc;
     private joyVector: Phaser.Math.Vector2 = new Phaser.Math.Vector2(0, 0);
     private isDraggingJoy: boolean = false;
+    private joyPointerId: number | null = null;
+
+    // Right Stick (Aim)
+    private joyBaseRight!: Phaser.GameObjects.Arc;
+    private joyThumbRight!: Phaser.GameObjects.Arc;
+    private joyVectorRight: Phaser.Math.Vector2 = new Phaser.Math.Vector2(0, 0);
+    private isDraggingJoyRight: boolean = false;
+    private joyRightPointerId: number | null = null;
+
     private itemButtons: Phaser.GameObjects.Rectangle[] = [];
     private skillButtons: Phaser.GameObjects.Arc[] = [];
     private skillLabels: Phaser.GameObjects.Text[] = [];
@@ -1868,19 +1888,43 @@ class GameScene extends Phaser.Scene {
 
         const w = this.scale.width;
         const h = this.scale.height;
+
+        // Left Stick (Move)
         this.joyBase = this.add.circle(100, h - 100, 60, 0x888888, 0.5).setScrollFactor(0).setDepth(100).setVisible(false);
         this.joyThumb = this.add.circle(100, h - 100, 30, 0xffffff, 0.8).setScrollFactor(0).setDepth(100).setVisible(false);
 
+        // Right Stick (Move - Alternative)
+        this.joyBaseRight = this.add.circle(w - 100, h - 100, 60, 0x888888, 0.5).setScrollFactor(0).setDepth(100).setVisible(false);
+        this.joyThumbRight = this.add.circle(w - 100, h - 100, 30, 0xffffff, 0.8).setScrollFactor(0).setDepth(100).setVisible(false);
+
+        this.input.addPointer(2); // Enable multi-touch (usually 2 is default)
+
         this.input.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
-            if (pointer.x < w / 2 && pointer.y > h / 2) {
+            // Left Stick Logic
+            const isLeftSafe = pointer.x < w / 2 && !(pointer.y > h - 100 && pointer.x > w / 2 - 200);
+            if (isLeftSafe && this.joyPointerId === null) {
+                this.joyPointerId = pointer.id;
                 this.isDraggingJoy = true;
                 this.joyBase.setPosition(pointer.x, pointer.y).setVisible(true);
                 this.joyThumb.setPosition(pointer.x, pointer.y).setVisible(true);
                 this.joyVector.set(0, 0);
             }
+
+            // Right Stick Logic
+            // Exclude Skill Buttons Area (Right Bottom)
+            // Skills are at w - 160 + (i*60), y = h - 100. Approx w-180 to w.
+            const isRightSafe = pointer.x >= w / 2 && !(pointer.y > h - 150 && pointer.x > w - 240);
+            if (isRightSafe && this.joyRightPointerId === null) {
+                this.joyRightPointerId = pointer.id;
+                this.isDraggingJoyRight = true;
+                this.joyBaseRight.setPosition(pointer.x, pointer.y).setVisible(true);
+                this.joyThumbRight.setPosition(pointer.x, pointer.y).setVisible(true);
+                this.joyVectorRight.set(0, 0);
+            }
         });
+
         this.input.on('pointermove', (pointer: Phaser.Input.Pointer) => {
-            if (this.isDraggingJoy) {
+            if (this.isDraggingJoy && pointer.id === this.joyPointerId) {
                 const dist = Phaser.Math.Distance.Between(this.joyBase.x, this.joyBase.y, pointer.x, pointer.y);
                 const angle = Phaser.Math.Angle.Between(this.joyBase.x, this.joyBase.y, pointer.x, pointer.y);
                 const thumbDist = Math.min(dist, 60);
@@ -1889,13 +1933,35 @@ class GameScene extends Phaser.Scene {
                 this.joyVector.set(Math.cos(angle), Math.sin(angle));
                 if (dist < 10) this.joyVector.set(0, 0);
             }
+
+            if (this.isDraggingJoyRight && pointer.id === this.joyRightPointerId) {
+                const dist = Phaser.Math.Distance.Between(this.joyBaseRight.x, this.joyBaseRight.y, pointer.x, pointer.y);
+                const angle = Phaser.Math.Angle.Between(this.joyBaseRight.x, this.joyBaseRight.y, pointer.x, pointer.y);
+                const thumbDist = Math.min(dist, 60);
+                this.joyThumbRight.x = this.joyBaseRight.x + Math.cos(angle) * thumbDist;
+                this.joyThumbRight.y = this.joyBaseRight.y + Math.sin(angle) * thumbDist;
+                this.joyVectorRight.set(Math.cos(angle), Math.sin(angle));
+                // Allow aim even with small movement, but normalize if needed
+            }
         });
-        this.input.on('pointerup', () => {
-            this.isDraggingJoy = false;
-            this.joyBase.setVisible(false);
-            this.joyThumb.setVisible(false);
-            this.joyVector.set(0, 0);
+
+        this.input.on('pointerup', (pointer: Phaser.Input.Pointer) => {
+            if (pointer.id === this.joyPointerId) {
+                this.isDraggingJoy = false;
+                this.joyPointerId = null;
+                this.joyBase.setVisible(false);
+                this.joyThumb.setVisible(false);
+                this.joyVector.set(0, 0);
+            }
+            if (pointer.id === this.joyRightPointerId) {
+                this.isDraggingJoyRight = false;
+                this.joyRightPointerId = null;
+                this.joyBaseRight.setVisible(false);
+                this.joyThumbRight.setVisible(false);
+                this.joyVectorRight.set(0, 0);
+            }
         });
+
 
         // スキルボタン
         for (let i = 0; i < 3; i++) {
@@ -2183,6 +2249,7 @@ class GameScene extends Phaser.Scene {
         if (this.cursors.up.isDown) vy = -1; else if (this.cursors.down.isDown) vy = 1;
 
         if (this.isDraggingJoy) { vx = this.joyVector.x; vy = this.joyVector.y; }
+        else if (this.isDraggingJoyRight) { vx = this.joyVectorRight.x; vy = this.joyVectorRight.y; }
 
         const buffMult = this.speedBuffActive ? 2.0 : 1.0;
         const vec = new Phaser.Math.Vector2(vx, vy).normalize().scale(this.stats.speed * buffMult);
@@ -2441,25 +2508,22 @@ class GameScene extends Phaser.Scene {
         this.updateHUD(); this.metalSynth.triggerAttackRelease("C6", "32n"); loot.destroy();
     }
 
-    getNearestEnemy(): Phaser.GameObjects.GameObject | null {
-        if (this.isBossActive && this.bossObject) return this.bossObject;
+    getNearestEnemy() {
+        if (!this.enemies || this.enemies.getLength() === 0) return null;
         let nearest: any = null;
-        let minDistSq = 1000 * 1000;
-        const px = this.player.x, py = this.player.y;
-        const enemies = this.enemies.getChildren();
-        for (let i = 0; i < enemies.length; i++) {
-            const e: any = enemies[i];
-            if (e.active) {
-                const dx = e.x - px;
-                const dy = e.y - py;
-                const distSq = dx * dx + dy * dy;
-                if (distSq < minDistSq) { minDistSq = distSq; nearest = e; }
-            }
-        }
+        let minDist = Infinity;
+        if (this.isBossActive && this.bossObject && this.bossObject.active) return this.bossObject; // Prioritize Boss
+
+        this.enemies.getChildren().forEach((e: any) => {
+            const d = Phaser.Math.Distance.Between(this.player.x, this.player.y, e.x, e.y);
+            if (d < minDist) { minDist = d; nearest = e; }
+        });
         return nearest;
     }
 
     fireBullet(target: any) {
+        if (!target || !target.active) return;
+
         const b = this.bullets.create(this.player.x, this.player.y, 'bullet');
         // Disable world bounds so they can fly off-screen and not stuck at edges
         // b.body.setCollideWorldBounds(true); 
@@ -2472,8 +2536,6 @@ class GameScene extends Phaser.Scene {
         const vec = new Phaser.Math.Vector2(Math.cos(angle), Math.sin(angle)).scale(this.stats.speed + 200);
         b.setVelocity(vec.x, vec.y);
         b.setRotation(angle);
-
-        // Tone.js Mobile Optimization: Limit polyphony or skip if too busy
         if (Tone && Tone.context.state === 'running') {
             try {
                 // If many bullets, skip sound occasionally
