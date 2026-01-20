@@ -1664,6 +1664,15 @@ class GameScene extends Phaser.Scene {
         // this.gameOverText = null; // This property does not exist in the provided code snippet, keeping it commented out as per instruction.
 
         this.isInvincible = false; this.killCount = 0; this.isBossActive = false; this.bossObject = null; this.speedBuffActive = false;
+
+        // ★重要: ジョイスティックの状態をリセット
+        this.isDraggingJoy = false;
+        this.joyPointerId = null;
+        if (this.joyVector) this.joyVector.set(0, 0);
+
+        this.isDraggingJoyRight = false;
+        this.joyRightPointerId = null;
+        if (this.joyVectorRight) this.joyVectorRight.set(0, 0);
         const stage = DataManager.currentStage;
         if (DataManager.isPracticeMode) { this.requiredKills = Infinity; }
         else { this.requiredKills = stage * 25; }
