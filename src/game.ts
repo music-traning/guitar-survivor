@@ -1168,7 +1168,12 @@ class MapScene extends Phaser.Scene {
                 divSkillDeck.appendChild(btn);
             });
             colEquip.appendChild(divSkillDeck);
-            layout.appendChild(colEquip);
+            if (this.statusTab === 'items') {
+                layout.appendChild(colEquip);
+                layout.style.gridTemplateColumns = isWide ? '1fr 1fr 1fr' : '1fr';
+            } else {
+                layout.style.gridTemplateColumns = isWide ? '1fr 2fr' : '1fr';
+            }
 
             // INVENTORY COLUMN
             const colBag = document.createElement('div');
@@ -1219,44 +1224,49 @@ class MapScene extends Phaser.Scene {
                             btnEquip.className = 'cyber-btn'; btnEquip.innerText = 'EQUIP';
                             btnEquip.style.marginLeft = '5px';
                             btnEquip.onclick = () => {
-                                // Show Slot Selector
-                                const slots = document.createElement('div');
-                                slots.style.position = 'fixed'; slots.style.top = '50%'; slots.style.left = '50%';
-                                slots.style.transform = 'translate(-50%, -50%)'; slots.style.background = '#000';
-                                slots.style.border = '2px solid #0f0'; slots.style.padding = '20px'; slots.style.zIndex = '10000';
-                                slots.innerHTML = '<h3>SELECT SLOT</h3>';
+                                // Show Slot Selector (Improved Modal)
+                                const overlay = document.createElement('div');
+                                overlay.className = 'cyber-overlay';
+                                const panel = document.createElement('div');
+                                panel.className = 'cyber-panel item-selector-panel';
+                                panel.innerHTML = `<h3 style="color:var(--neon-green)">SELECT SLOT TO EQUIP</h3>`;
+
                                 [0, 1, 2, 3, 4].forEach(i => {
                                     const b = document.createElement('button');
                                     b.className = 'cyber-btn';
+                                    b.style.marginBottom = '10px';
+                                    b.style.width = '100%';
+                                    b.style.padding = '15px'; // Larger touch area
+                                    b.style.textAlign = 'left';
 
                                     const currentId = DataManager.equippedConsumables[i];
-                                    let label = `Slot ${i + 1}`;
+                                    let label = `<span style="color:var(--neon-yellow)">SLOT ${i + 1}</span>`;
                                     if (currentId) {
-                                        const currentItem = DataManager.inventory.find(inv => inv.id === currentId);
-                                        if (currentItem) label += `: ${getTxItemName(currentItem)}`;
-                                        else label += ": (Unknown)";
+                                        let cItem = DataManager.inventory.find(inv => inv.id === currentId);
+                                        if (!cItem) cItem = DataManager.itemMaster.find(m => m.id === currentId);
+                                        label += `<br><span style="font-size:0.9em;color:#ccc">Current: ${cItem ? getTxItemName(cItem) : '???'}</span>`;
                                     } else {
-                                        label += ": (Empty)";
+                                        label += `<br><span style="font-size:0.9em;color:#666">Empty</span>`;
                                     }
 
-                                    b.innerText = label;
-                                    b.style.margin = '5px';
-                                    b.style.display = 'block'; // Make them stack
-                                    b.style.width = '100%';
-
+                                    b.innerHTML = label;
                                     b.onclick = () => {
                                         DataManager.equipConsumable(i, group.item.id);
-                                        document.body.removeChild(slots);
+                                        overlay.remove();
                                         this.showMessage(`Equipped to Slot ${i + 1}`);
                                         render();
                                     };
-                                    slots.appendChild(b);
+                                    panel.appendChild(b);
                                 });
+
                                 const close = document.createElement('button');
                                 close.className = 'cyber-btn danger'; close.innerText = 'CANCEL';
-                                close.onclick = () => document.body.removeChild(slots);
-                                slots.appendChild(close);
-                                document.body.appendChild(slots);
+                                close.style.width = '100%'; close.style.marginTop = '10px';
+                                close.onclick = () => overlay.remove();
+                                panel.appendChild(close);
+
+                                overlay.appendChild(panel);
+                                document.body.appendChild(overlay);
                             };
                             btnContainer.appendChild(btnEquip);
 
@@ -1345,6 +1355,72 @@ class MapScene extends Phaser.Scene {
                         <small style="color:#ccc">${desc}</small>
                       </div>`;
 
+                    const btnChange = document.createElement('button');
+                    btnChange.className = 'cyber-btn';
+                    btnChange.innerText = 'CHANGE';
+                    btnChange.style.marginLeft = '5px';
+                    btnChange.onclick = () => {
+                        // Open Item Picker Modal
+                        const overlay = document.createElement('div');
+                        overlay.className = 'cyber-overlay';
+                        const panel = document.createElement('div');
+                        panel.className = 'cyber-panel item-selector-panel';
+                        panel.innerHTML = `<h3 style="color:var(--neon-green)">SELECT ITEM FOR SLOT ${i + 1}</h3>`;
+
+                        const listDiv = document.createElement('div');
+                        listDiv.style.maxHeight = '300px'; listDiv.style.overflowY = 'auto';
+
+                        // Get unique consumables from inventory
+                        const consumables = this.groupItems(DataManager.inventory.filter(inv => inv.category === 'consumable'));
+
+                        if (consumables.length === 0) {
+                            listDiv.innerHTML = "<p>No consumables in inventory.</p>";
+                        }
+
+                        consumables.forEach(g => {
+                            const row = document.createElement('div');
+                            row.className = 'item-list-row';
+                            row.style.display = 'flex';
+                            row.style.justifyContent = 'space-between';
+                            row.style.alignItems = 'center';
+                            row.style.cursor = 'pointer';
+
+                            row.innerHTML = `<div><b style="color:var(--neon-yellow)">${getTxItemName(g.item)}</b> x${g.count}</div>`;
+
+                            // Check if equipped in other slot? It's allowed to equip same item in multiple slots if you have enough logic, 
+                            // but currently ID based. If IDs are unique per instance... wait, inventory items are instances. 
+                            // But groupItems merges them.
+                            // DataManager.inventory uses unique IDs for instances? No, `inventory` is list of `ItemData`.
+                            // `ItemData` has `id`. If generic items share ID (e.g. 'I001'), then they are same.
+                            // `equippedConsumables` stores `itemId` (string).
+                            // So "Equip Consumable" means setting the ID. When consumed, we remove ONE instance of that ID from inventory.
+
+                            const btnSelect = document.createElement('button');
+                            btnSelect.className = 'cyber-btn';
+                            btnSelect.innerText = 'SELECT';
+                            btnSelect.onclick = () => {
+                                DataManager.equipConsumable(i, g.item.id);
+                                overlay.remove();
+                                render();
+                            };
+
+                            row.onclick = btnSelect.onclick; // Make whole row clickable
+                            row.appendChild(btnSelect);
+                            listDiv.appendChild(row);
+                        });
+
+                        panel.appendChild(listDiv);
+
+                        const close = document.createElement('button');
+                        close.className = 'cyber-btn danger'; close.innerText = 'Back';
+                        close.style.width = '100%'; close.style.marginTop = '10px';
+                        close.onclick = () => overlay.remove();
+                        panel.appendChild(close);
+
+                        overlay.appendChild(panel);
+                        document.body.appendChild(overlay);
+                    };
+
                     const btnClear = document.createElement('button');
                     btnClear.className = 'cyber-btn danger';
                     btnClear.innerText = 'UNEQUIP';
@@ -1353,7 +1429,15 @@ class MapScene extends Phaser.Scene {
                         DataManager.unequipConsumable(i);
                         render();
                     };
-                    row.appendChild(btnClear);
+
+                    const btnWrap = document.createElement('div');
+                    btnWrap.style.display = 'flex';
+                    btnWrap.style.flexDirection = 'column';
+                    btnWrap.style.gap = '5px';
+
+                    btnWrap.appendChild(btnChange);
+                    btnWrap.appendChild(btnClear);
+                    row.appendChild(btnWrap);
 
                     list.appendChild(row);
                 });
@@ -1887,9 +1971,9 @@ class GameScene extends Phaser.Scene {
         this.tweens.add({ targets: c, alpha: 0, scale: 1.2, duration: 200, onComplete: () => c.destroy() });
     }
 
-    showMessageFloat(msg: string) {
+    showMessageFloat(msg: string, color: string = '#00f3ff', fontSize: string = '20px') {
         const t = this.add.text(this.player.x, this.player.y - 40, msg, {
-            fontFamily: 'Orbitron', fontSize: '20px', color: '#00f3ff', stroke: '#000', strokeThickness: 4, shadow: { offsetX: 0, offsetY: 0, color: '#bc13fe', blur: 10, fill: true, stroke: true }
+            fontFamily: 'Orbitron', fontSize: fontSize, color: color, stroke: '#000', strokeThickness: 4, shadow: { offsetX: 0, offsetY: 0, color: '#bc13fe', blur: 10, fill: true, stroke: true }
         }).setOrigin(0.5);
         this.tweens.add({ targets: t, y: this.player.y - 80, alpha: 0, duration: 1000, onComplete: () => t.destroy() });
     }
@@ -1993,9 +2077,22 @@ class GameScene extends Phaser.Scene {
             }
         });
 
-        if (DataManager.isPracticeMode) this.txtObjective.setText(`KILLS: ${this.killCount} (Endless)`);
-        else if (this.isBossActive) this.txtObjective.setText(`WARNING: BOSS BATTLE!`);
-        else this.txtObjective.setText(`KILLS: ${this.killCount} / ${this.requiredKills}`);
+        if (DataManager.isPracticeMode) {
+            this.txtObjective.setText(`KILLS: ${this.killCount} (Endless)`);
+            this.txtObjective.setColor('#f9e504');
+        } else if (this.isBossActive) {
+            if (this.bossObject && this.bossObject.active) {
+                const current = Math.floor(this.bossObject.getData('hp'));
+                const max = Math.floor(this.bossObject.getData('maxHp'));
+                this.txtObjective.setText(`BOSS HP: ${current} / ${max}`);
+                this.txtObjective.setColor('#ff0055'); // Red/Pink for Boss
+            } else {
+                this.txtObjective.setText(`WARNING: BOSS BATTLE!`);
+            }
+        } else {
+            this.txtObjective.setText(`KILLS: ${this.killCount} / ${this.requiredKills}`);
+            this.txtObjective.setColor('#f9e504');
+        }
     }
 
     useConsumable(index: number) {
@@ -2107,6 +2204,17 @@ class GameScene extends Phaser.Scene {
             this.physics.moveToObject(this.bossObject, this.player, 50);
         }
 
+        // Homing Bullets Logic
+        this.enemyBullets.getChildren().forEach((b: any) => {
+            if (b.active && b.getData('isHoming')) {
+                const speed = b.getData('speed');
+                // Steer towards player
+                this.physics.moveToObject(b, this.player, speed);
+                // Update rotation
+                b.rotation = Phaser.Math.Angle.Between(b.x, b.y, this.player.x, this.player.y);
+            }
+        });
+
         // ★追加: ボスの攻撃判定 (ステージ進行で間隔短縮)
         const fireInterval = Math.max(600, 2000 - (DataManager.currentStage * 120));
         if (time > this.bossLastFired + fireInterval) {
@@ -2145,9 +2253,35 @@ class GameScene extends Phaser.Scene {
 
         if (enemy === this.bossObject) {
             let hp = enemy.getData('hp');
-            hp -= this.stats.bulletSize;
+
+            // Distance Decay Logic
+            const dist = Phaser.Math.Distance.Between(this.player.x, this.player.y, enemy.x, enemy.y);
+            let dmg = this.stats.bulletSize;
+
+            // Effective Range: 200px. Decay starts after that.
+            if (dist > 200) {
+                // Decay factor: 0.5 at 500px, 0.2 at 800px...
+                // Formula: 1 - ((dist - 200) / 600)
+                // Cap min at 0.1
+                let decay = 1.0 - ((dist - 200) / 600);
+                decay = Math.max(0.1, decay);
+                dmg *= decay;
+            }
+            // Round to int
+            dmg = Math.floor(dmg);
+            if (dmg < 1) dmg = 1;
+
+            hp -= dmg;
             enemy.setData('hp', hp);
-            this.showMessageFloat(`${hp}`);
+            this.updateHUD();
+
+            // Show Damage Number with size/color reflecting effectiveness
+            let color = '#fff'; let size = '20px';
+            if (dmg < this.stats.bulletSize * 0.5) { color = '#888'; size = '14px'; } // Weak hit
+            else if (dmg >= this.stats.bulletSize) { color = '#ff0'; size = '24px'; } // Critical/Full
+
+            this.showMessageFloat(`${dmg}`, color, size);
+
             if (hp <= 0) {
                 enemy.destroy();
                 this.bossObject = null;
@@ -2305,7 +2439,6 @@ class GameScene extends Phaser.Scene {
         }
     }
 
-    // ★新規追加: ボスの攻撃ロジック
     bossFire() {
         if (!this.bossObject || !this.bossObject.active) return;
 
@@ -2326,15 +2459,26 @@ class GameScene extends Phaser.Scene {
 
         for (let i = 0; i < bulletCount; i++) {
             const angle = startAngle + (step * i);
+            const isHoming = (i === 0 || i === bulletCount - 1) && (Math.random() < 0.3 + (DataManager.currentStage * 0.05)); // Edges have higher chance, or scale with stage
 
             // 弾を生成
             const b = this.enemyBullets.create(this.bossObject.x, this.bossObject.y, 'bullet');
-            b.setTint(0xff00ff); // 敵の弾は紫色にする
-            b.setScale(1.5);     // 少し大きくする
 
-            // 速度ベクトルを計算 (速度 Base 200 + Stage Boost)
             const speed = 200 + (DataManager.currentStage * 15);
-            const vec = new Phaser.Math.Vector2(Math.cos(angle), Math.sin(angle)).scale(speed);
+
+            if (isHoming) {
+                b.setTint(0xff0000); // Homing is RED
+                b.setScale(2.0); // Bigger
+                b.setData('isHoming', true);
+                b.setData('speed', speed * 0.6); // Slower but tracks
+            } else {
+                b.setTint(0xff00ff); // Normal is Purple
+                b.setScale(1.5);
+                b.setData('isHoming', false);
+            }
+
+            // 速度ベクトルを計算
+            const vec = new Phaser.Math.Vector2(Math.cos(angle), Math.sin(angle)).scale(isHoming ? speed * 0.6 : speed);
             b.setVelocity(vec.x, vec.y);
 
             // 回転アニメーション
