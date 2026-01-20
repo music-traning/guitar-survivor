@@ -870,7 +870,7 @@ class MapScene extends Phaser.Scene {
     private txtGuitar!: Phaser.GameObjects.Text;
     private txtGold!: Phaser.GameObjects.Text; // ★Added
     private isMenuOpen: boolean = false;
-    private statusTab: 'items' | 'skills' | 'guitars' = 'items';
+    private statusTab: 'items' | 'skills' | 'guitars' | 'slots' = 'items';
 
     constructor() { super('map-scene'); }
 
@@ -1115,7 +1115,7 @@ class MapScene extends Phaser.Scene {
         btnItems.onclick = () => { this.statusTab = 'items'; render(); };
         btnSkills.onclick = () => { this.statusTab = 'skills'; render(); };
         btnGuitars.onclick = () => { this.statusTab = 'guitars'; render(); };
-        btnSlots.onclick = () => { this.statusTab = 'slots' as any; render(); };
+        btnSlots.onclick = () => { this.statusTab = 'slots'; render(); };
 
         tabs.appendChild(btnItems); tabs.appendChild(btnSkills); tabs.appendChild(btnGuitars); tabs.appendChild(btnSlots);
         ui.content.appendChild(tabs);
