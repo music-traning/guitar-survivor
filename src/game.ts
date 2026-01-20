@@ -1845,8 +1845,9 @@ class GameScene extends Phaser.Scene {
             this.physics.moveToObject(this.bossObject, this.player, 50);
         }
 
-        // ★追加: ボスの攻撃判定 (1.5秒ごとに発射)
-        if (time > this.bossLastFired + 1500) {
+        // ★追加: ボスの攻撃判定 (ステージ進行で間隔短縮)
+        const fireInterval = Math.max(600, 2000 - (DataManager.currentStage * 120));
+        if (time > this.bossLastFired + fireInterval) {
             this.bossFire();
             this.bossLastFired = time;
         }
@@ -1863,7 +1864,11 @@ class GameScene extends Phaser.Scene {
         this.enemies.clear(true, true);
         const w = this.scale.width;
         this.bossObject = this.physics.add.image(w / 2, -100, 'boss').setScale(3);
-        this.bossObject.setData('hp', DataManager.currentStage * 500);
+        // HP Scaling: Stage 1 = 1500, Stage 10 = 10000+
+        const stage = DataManager.currentStage;
+        const hp = (stage * 1200) + (Math.pow(stage, 2) * 50);
+        this.bossObject.setData('hp', hp);
+        this.bossObject.setData('maxHp', hp); // For visual bar if needed later
         this.enemies.add(this.bossObject);
         this.showMessageFloat("BOSS APPEARED!");
         this.synth.triggerAttackRelease(["C2", "G2"], "2n");
@@ -2004,9 +2009,9 @@ class GameScene extends Phaser.Scene {
     bossFire() {
         if (!this.bossObject || !this.bossObject.active) return;
 
-        // ステージ数に応じて弾の数を計算 (例: ステージ1=3発, ステージ10=12発)
+        // ステージ数に応じて弾の数を計算 (例: ステージ1=4発, ステージ10=13発)
         // 難易度調整はお好みで数値をいじってください
-        const bulletCount = 3 + (DataManager.currentStage - 1);
+        const bulletCount = 3 + DataManager.currentStage;
 
         // プレイヤーへの角度
         const angleToPlayer = Phaser.Math.Angle.Between(this.bossObject.x, this.bossObject.y, this.player.x, this.player.y);
@@ -2027,8 +2032,9 @@ class GameScene extends Phaser.Scene {
             b.setTint(0xff00ff); // 敵の弾は紫色にする
             b.setScale(1.5);     // 少し大きくする
 
-            // 速度ベクトルを計算 (速度 200)
-            const vec = new Phaser.Math.Vector2(Math.cos(angle), Math.sin(angle)).scale(200);
+            // 速度ベクトルを計算 (速度 Base 200 + Stage Boost)
+            const speed = 200 + (DataManager.currentStage * 15);
+            const vec = new Phaser.Math.Vector2(Math.cos(angle), Math.sin(angle)).scale(speed);
             b.setVelocity(vec.x, vec.y);
 
             // 回転アニメーション
