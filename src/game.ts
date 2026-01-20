@@ -780,21 +780,51 @@ class BootScene extends Phaser.Scene {
         g.fillStyle(0x333333); g.fillRect(6, 12, 1, 4); g.fillRect(9, 12, 1, 4);
         g.generateTexture('player', 16, 16); g.clear();
 
-        // Cyberpunk Enemy (Glitchy, Neon Green)
+        // Cyberpunk Bosses (Stages 1-5 Varied)
+        const bossColors = [0xff0000, 0xff00ff, 0x00ff00, 0x0000ff, 0xffaa00];
+        for (let i = 0; i < 5; i++) {
+            g.fillStyle(0x111111); g.fillCircle(32, 32, 30);
+            g.lineStyle(2, bossColors[i]); g.strokeCircle(32, 32, 30);
+            // Eyes
+            g.fillStyle(bossColors[i]);
+            // Logic for varying faces
+            if (i === 0) { g.fillCircle(20, 20, 5); g.fillCircle(44, 20, 5); g.fillRect(24, 40, 16, 4); } // Normal
+            else if (i === 1) { g.fillRect(15, 15, 10, 10); g.fillRect(39, 15, 10, 10); g.fillCircle(32, 45, 5); } // Square eyes
+            else if (i === 2) { g.fillTriangle(20, 25, 25, 15, 30, 25); g.fillTriangle(34, 25, 39, 15, 44, 25); g.fillRect(20, 35, 24, 10); } // Triangle eyes
+            else if (i === 3) { g.fillCircle(32, 32, 10); g.strokeCircle(32, 32, 20); } // Cyclops
+            else { g.fillRect(10, 20, 10, 4); g.fillRect(44, 20, 10, 4); g.strokeRect(20, 35, 24, 10); } // Robo
+
+            g.generateTexture(`boss${i + 1}`, 64, 64); g.clear();
+        }
+        // Fallback 'boss' texture for safety (same as boss1)
+        g.fillStyle(0x220000); g.fillCircle(32, 32, 30); g.lineStyle(2, 0xff0000); g.strokeCircle(32, 32, 30);
+        g.generateTexture('boss', 64, 64); g.clear();
+
+        // New Enemies
+        // 'shooter': Triangle shape
+        g.lineStyle(2, 0xff00ff); g.strokeTriangle(8, 2, 14, 14, 2, 14);
+        g.fillStyle(0x550055); g.fillTriangle(8, 2, 14, 14, 2, 14);
+        g.generateTexture('shooter', 16, 16); g.clear();
+
+        // 'bomber': Round bomb shape with fuse
+        g.fillStyle(0x333333); g.fillCircle(8, 9, 6);
+        g.fillStyle(0xffaa00); g.fillRect(7, 2, 2, 3); // Fuse
+        g.generateTexture('bomber', 16, 16); g.clear();
+
+        // Enemy Bullet (Red Orb)
+        g.fillStyle(0xff0000); g.fillCircle(4, 4, 4);
+        g.generateTexture('enemy_bullet', 8, 8); g.clear();
+
+        // Explosion Effect (Simple)
+        g.fillStyle(0xffaa00); g.fillCircle(16, 16, 12);
+        g.fillStyle(0xffffff); g.fillCircle(16, 16, 6);
+        g.generateTexture('explosion', 32, 32); g.clear();
+
+        // Legacy Enemies (Keep)
         g.fillStyle(0x0aff0a); g.fillRect(4, 4, 8, 8);
         g.fillStyle(0x000000); g.fillRect(5, 5, 2, 2); g.fillRect(9, 5, 2, 2); g.fillRect(6, 9, 4, 1);
-        // Spikes
         g.fillStyle(0xff0055); g.fillRect(2, 2, 2, 2); g.fillRect(12, 2, 2, 2); g.fillRect(2, 12, 2, 2); g.fillRect(12, 12, 2, 2);
         g.generateTexture('enemy', 16, 16); g.clear();
-
-        // Cyberpunk Boss (Hexagon-ish, Dark & Red)
-        g.fillStyle(0x220000); g.fillCircle(32, 32, 30);
-        g.lineStyle(2, 0xff0000); g.strokeCircle(32, 32, 30);
-        g.fillStyle(0xff0000); g.fillCircle(20, 20, 5); g.fillCircle(44, 20, 5); // Eyes
-        g.fillStyle(0x000000); g.fillRect(24, 40, 16, 4); // Mouth
-        // Cyber details
-        g.lineStyle(2, 0x00f3ff); g.beginPath(); g.moveTo(10, 32); g.lineTo(54, 32); g.strokePath();
-        g.generateTexture('boss', 64, 64); g.clear();
 
         // Laser Bullet
         g.fillStyle(0x00f3ff); g.fillRect(0, 4, 12, 2);
@@ -1797,48 +1827,42 @@ class GameScene extends Phaser.Scene {
         const stage = this.getDifficultyLevel();
         const rand = Math.random();
         let type = 'normal';
+        let texture = 'enemy';
 
-        // Spawn Chances (Max 100% cap implicitly handled by logic structure)
-        const rareChance = Math.min(0.2, stage * 0.01); // Max 20%
-        const tankChance = Math.min(0.3, (stage - 3) * 0.05); // Starts Stage 4
-        const fastChance = Math.min(0.4, (stage - 1) * 0.05); // Starts Stage 2
+        // Spawn Chances
+        // Rare: 5%, Tank: 10%, Fast: 15%, Shooter: 10% (Stage 2+), Bomber: 5% (Stage 3+)
+        // Simple Priority Check
+        if (rand < 0.05) type = 'rare';
+        else if (rand < 0.15) type = 'tank';
+        else if (rand < 0.30) type = 'fast';
+        else if (stage >= 2 && rand < 0.40) { type = 'shooter'; texture = 'shooter'; }
+        else if (stage >= 3 && rand < 0.45) { type = 'bomber'; texture = 'bomber'; }
 
-        if (rand < rareChance) type = 'rare';
-        else if (rand < rareChance + tankChance) type = 'tank';
-        else if (rand < rareChance + tankChance + fastChance) type = 'fast';
-
-        const e = this.enemies.create(x, y, 'enemy').setScale(2);
+        const e = this.enemies.create(x, y, texture).setScale(2);
 
         // Stats based on type
-        // Base Stats
         let hp = 10 + (stage * 5);
         let speed = 80 + (stage * 5);
         let exp = 5;
 
-        // Practice Mode scaling boost (make them tougher faster)
+        // Practice Mode scaling boost
         if (DataManager.isPracticeMode) {
-            hp += stage * 5; // Extra HP scaling in practice
+            hp += stage * 5;
             speed += stage * 2;
         }
 
         if (type === 'fast') {
-            e.setTint(0x00ffff); // Cyan
-            hp *= 0.6;
-            speed *= 1.5;
-            exp = 8;
+            e.setTint(0x00ffff); hp *= 0.6; speed *= 1.5; exp = 8;
         } else if (type === 'tank') {
-            e.setTint(0xff5500); // Orange/Red
-            e.setScale(2.5);
-            hp *= 3;
-            speed *= 0.6;
-            exp = 15;
+            e.setTint(0xff5500); e.setScale(2.5); hp *= 3; speed *= 0.6; exp = 15;
         } else if (type === 'rare') {
-            e.setTint(0xffff00); // Gold
-            hp *= 1.5;
-            speed *= 2.0; // Fast!
-            exp = 50;
+            e.setTint(0xffff00); hp *= 1.5; speed *= 2.0; exp = 50;
+        } else if (type === 'shooter') {
+            e.setTint(0xff00ff); hp *= 0.8; speed *= 0.8; exp = 10;
+        } else if (type === 'bomber') {
+            e.setTint(0xffaa00); hp *= 0.5; speed *= 1.2; exp = 12;
         } else {
-            e.setTint(0x0aff0a); // Normal Green
+            e.setTint(0x0aff0a);
         }
 
         e.setData('hp', hp);
@@ -1846,7 +1870,8 @@ class GameScene extends Phaser.Scene {
         e.setData('speed', speed);
         e.setData('exp', exp);
         e.setData('type', type);
-        e.setData('attack', 10 + (stage * 2)); // Dynamic Attack Power
+        e.setData('attack', 10 + (stage * 2));
+        e.setData('lastFired', 0); // For Shooter
     }
 
     createMobileUI() {
@@ -2168,6 +2193,24 @@ class GameScene extends Phaser.Scene {
         }
     }
 
+    explodeBomber(e: any) {
+        if (!e.active) return;
+        const ex = e.x, ey = e.y;
+        e.destroy();
+
+        const explosion = this.add.sprite(ex, ey, 'explosion').setScale(2);
+        this.tweens.add({ targets: explosion, alpha: 0, scale: 4, duration: 500, onComplete: () => explosion.destroy() });
+        this.cameras.main.shake(100, 0.02);
+
+        // AoE Damage
+        const dist = Phaser.Math.Distance.Between(ex, ey, this.player.x, this.player.y);
+        if (dist < 100) {
+            // Mock attack for hitPlayer
+            const mockEnemy = { x: ex, y: ey, getData: () => 30 };
+            this.hitPlayer(this.player, mockEnemy);
+        }
+    }
+
     tryActivateSkill(cost: number, action: () => void) {
         if (DataManager.currentMp >= cost) {
             DataManager.currentMp -= cost; action(); this.updateHUD();
@@ -2233,8 +2276,39 @@ class GameScene extends Phaser.Scene {
         }
 
         this.enemies.getChildren().forEach((e: any) => {
-            const speed = e.getData('speed') || (80 + (DataManager.currentStage * 10)); // Use instance speed
+            const speed = e.getData('speed') || (80 + (DataManager.currentStage * 10));
+            const type = e.getData('type');
+
+            // Movement Logic
             this.physics.moveToObject(e, this.player, speed);
+
+            // Shooter Logic
+            if (type === 'shooter') {
+                const dist = Phaser.Math.Distance.Between(e.x, e.y, this.player.x, this.player.y);
+                if (dist < 400 && dist > 150) {
+                    // Keep distance
+                    e.body.setVelocity(0, 0);
+                }
+                const now = time;
+                const lastFired = e.getData('lastFired') || 0;
+                if (now > lastFired + 2000) { // Fire every 2s
+                    e.setData('lastFired', now);
+                    // Fire Bullet
+                    const eb = this.enemyBullets.create(e.x, e.y, 'enemy_bullet').setScale(1.5).setTint(0xff00ff);
+                    const angle = Phaser.Math.Angle.Between(e.x, e.y, this.player.x, this.player.y);
+                    const vec = new Phaser.Math.Vector2(Math.cos(angle), Math.sin(angle)).scale(200);
+                    eb.body.setVelocity(vec.x, vec.y);
+                    this.time.delayedCall(3000, () => { if (eb.active) eb.destroy(); });
+                }
+            }
+            // Bomber Logic
+            else if (type === 'bomber') {
+                const dist = Phaser.Math.Distance.Between(e.x, e.y, this.player.x, this.player.y);
+                if (dist < 50) {
+                    // Explode
+                    this.explodeBomber(e);
+                }
+            }
         });
 
         if (this.isBossActive && this.bossObject) {
@@ -2316,11 +2390,15 @@ class GameScene extends Phaser.Scene {
         this.isBossActive = true;
         // this.spawnEvent.remove(); // No longer needed with loop logic
         this.enemies.clear(true, true);
+        this.enemies.clear(true, true);
         const w = this.scale.width;
-        this.bossObject = this.physics.add.image(w / 2, -100, 'boss').setScale(3);
-        // HP Scaling: Stage 1 = 1500, Stage 10 = 10000+
+        // Select Boss Texture based on Stage (Mod 5)
+        // Stage 1 -> boss1, Stage 2 -> boss2 ... Stage 6 -> boss1
         const stage = DataManager.currentStage;
-        const hp = (stage * 1200) + (Math.pow(stage, 2) * 50);
+        const bossIndex = ((stage - 1) % 5) + 1;
+        this.bossObject = this.physics.add.image(w / 2, -100, `boss${bossIndex}`).setScale(3);
+        // HP Scaling Adjusted: Stage 1 = ~510, Stage 10 = ~6000
+        const hp = (stage * 500) + (Math.pow(stage, 2) * 10);
         this.bossObject.setData('hp', hp);
         this.bossObject.setData('maxHp', hp); // For visual bar if needed later
         this.enemies.add(this.bossObject);
