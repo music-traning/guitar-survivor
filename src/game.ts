@@ -318,6 +318,8 @@ class GameDataManager {
 
     inventory: ItemData[] = [];
     equippedItems: ItemData[] = [];
+    // ★所持ギター一覧 (Owned Guitars)
+    ownedGuitars: GuitarData[] = [];
     maxEquipSlots: number = 3;
 
     equippedSkills: SkillData[] = [];
@@ -352,6 +354,7 @@ class GameDataManager {
             equippedSkills: this.equippedSkills,
             shopStock: this.shopStock,
             currentGuitar: this.currentGuitar,
+            ownedGuitars: this.ownedGuitars,
             skillMaster: this.skillMaster
         };
         localStorage.setItem('guitar_survivor_save', JSON.stringify(data));
@@ -391,6 +394,15 @@ class GameDataManager {
                 this.currentGuitar = freshG ? { ...freshG } : data.currentGuitar;
             } else {
                 this.currentGuitar = null;
+            }
+
+            // Restore Owned Guitars
+            this.ownedGuitars = [];
+            if (data.ownedGuitars) {
+                this.ownedGuitars = hydrateInfos(data.ownedGuitars);
+            } else if (this.currentGuitar) {
+                // Migration: If no owned list but has current guitar, add it
+                this.ownedGuitars.push(this.currentGuitar);
             }
 
             // Skills are special (we just need learned status)
@@ -516,14 +528,24 @@ class GameDataManager {
 
     buyItem(item: ItemData | GuitarData) {
         if ('tags' in item) {
-            if (this.currentGuitar) this.shopStock.push(this.currentGuitar);
-            this.currentGuitar = item as GuitarData;
+            // Guitar Purchase: Add to Owned Guitars. Do NOT push old guitar to shop.
+            this.ownedGuitars.push(item as GuitarData);
+            // Optionally auto-equip? No, let user do it. Or yes? Let's just add to owned.
+            // But if it's the first guitar, equip it.
+            if (!this.currentGuitar) {
+                this.currentGuitar = item as GuitarData;
+            }
         } else {
             this.inventory.push(item as ItemData);
         }
         const stockIndex = this.shopStock.indexOf(item);
         if (stockIndex > -1) this.shopStock.splice(stockIndex, 1);
         this.money -= item.price;
+        this.save();
+    }
+
+    equipGuitar(guitar: GuitarData) {
+        this.currentGuitar = guitar;
         this.save();
     }
 
@@ -827,7 +849,7 @@ class MapScene extends Phaser.Scene {
     private txtGuitar!: Phaser.GameObjects.Text;
     private txtGold!: Phaser.GameObjects.Text; // ★Added
     private isMenuOpen: boolean = false;
-    private statusTab: 'items' | 'skills' = 'items';
+    private statusTab: 'items' | 'skills' | 'guitars' = 'items';
 
     constructor() { super('map-scene'); }
 
@@ -1065,10 +1087,12 @@ class MapScene extends Phaser.Scene {
         tabs.style.marginBottom = '15px';
         const btnItems = document.createElement('button'); btnItems.innerText = 'INVENTORY'; btnItems.className = 'cyber-btn';
         const btnSkills = document.createElement('button'); btnSkills.innerText = 'SKILLS'; btnSkills.className = 'cyber-btn';
+        const btnGuitars = document.createElement('button'); btnGuitars.innerText = 'GUITARS'; btnGuitars.className = 'cyber-btn';
 
         btnItems.onclick = () => { this.statusTab = 'items'; render(); };
         btnSkills.onclick = () => { this.statusTab = 'skills'; render(); };
-        tabs.appendChild(btnItems); tabs.appendChild(btnSkills);
+        btnGuitars.onclick = () => { this.statusTab = 'guitars'; render(); };
+        tabs.appendChild(btnItems); tabs.appendChild(btnSkills); tabs.appendChild(btnGuitars);
         ui.content.appendChild(tabs);
 
         const mainArea = document.createElement('div');
@@ -1155,6 +1179,31 @@ class MapScene extends Phaser.Scene {
                         }
                     };
                     row.appendChild(btn);
+                    list.appendChild(row);
+                });
+            } else if (this.statusTab === 'guitars') {
+                colBag.innerHTML = `<h3 style="color:var(--neon-blue)">GUITAR COLLECTION</h3>`;
+                DataManager.ownedGuitars.forEach(g => {
+                    const row = document.createElement('div'); row.className = 'item-list-row';
+                    const isEquipped = DataManager.currentGuitar && DataManager.currentGuitar.id === g.id;
+                    if (isEquipped) row.style.border = '1px solid var(--neon-green)';
+
+                    row.innerHTML = `
+                  <div style="flex:1">
+                    <b style="color:var(--neon-yellow)">${getTxItemName(g)}</b> ${isEquipped ? '<span style="color:var(--neon-green)">[EQUIPPED]</span>' : ''}<br>
+                    <small style="color:#ccc">SPD:${g.speed} RATE:${g.fireRate}</small>
+                  </div>`;
+
+                    if (!isEquipped) {
+                        const btn = document.createElement('button');
+                        btn.className = 'cyber-btn';
+                        btn.innerText = 'EQUIP';
+                        btn.onclick = () => {
+                            DataManager.equipGuitar(g);
+                            render();
+                        };
+                        row.appendChild(btn);
+                    }
                     list.appendChild(row);
                 });
             } else {
