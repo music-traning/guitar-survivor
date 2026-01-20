@@ -41,7 +41,7 @@ E019,Eventide H9,Eventide H9,effect,speed,60,60000,rare,あらゆる空間系を
 E020,Fractal Axe-Fx,Fractal Axe-Fx,effect,rate,0.3,350000,legendary,ラック式アンプシミュレーター。,Rack-mount amp simulator.
 I021,Magic Potion,魔法の薬,consumable,heal_mp,999,5000,rare,全回復の秘薬。,Elixir of full recovery.
 I022,Elixir of Life,生命の秘薬,consumable,heal_hp,999,5000,rare,完全回復の秘薬。,Elixir of complete recovery.
-I023,Pick of Destiny,運命のピック,accessory,rate,0.1,100000,legendary,悪魔の力が宿るピック。超速連射。,Pick with demonic power. Super rapid fire.
+I023,Pick of Destiny,運命のピック,accessory,rate,0.5,100000,legendary,悪魔の力が宿るピック。連射速度2倍。,Pick with demonic power. Doulbe fire speed.
 I024,Dragon Strap,ドラゴンのストラップ,accessory,size,50,80000,legendary,竜の革で作られたストラップ。,Strap made of dragon leather.
 I025,Phoenix Capo,不死鳥のカポ,accessory,speed,100,120000,legendary,不死鳥の羽を使用したカポ。爆速。,Capo using phoenix feathers. Explosive speed.
 I026,Vacuum Tube 12AX7,真空管 12AX7,accessory,size,15,15000,rare,ヴィンテージ真空管。音が太くなる。,Vintage vacuum tube. Thickens the sound.

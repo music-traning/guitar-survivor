@@ -322,6 +322,9 @@ class GameDataManager {
     ownedGuitars: GuitarData[] = [];
     maxEquipSlots: number = 3;
 
+    // ★装備消費アイテム (Equipped Consumables - Slot 0-4)
+    equippedConsumables: (string | null)[] = [null, null, null, null, null];
+
     equippedSkills: SkillData[] = [];
     maxSkillSlots: number = 3;
 
@@ -355,6 +358,7 @@ class GameDataManager {
             shopStock: this.shopStock,
             currentGuitar: this.currentGuitar,
             ownedGuitars: this.ownedGuitars,
+            equippedConsumables: this.equippedConsumables,
             skillMaster: this.skillMaster
         };
         localStorage.setItem('guitar_survivor_save', JSON.stringify(data));
@@ -404,6 +408,9 @@ class GameDataManager {
                 // Migration: If no owned list but has current guitar, add it
                 this.ownedGuitars.push(this.currentGuitar);
             }
+
+            // Restore Equipped Consumables
+            this.equippedConsumables = data.equippedConsumables || [null, null, null, null, null];
 
             // Skills are special (we just need learned status)
             // But we also want to display names, so let's rely on Master for everything except 'learned'
@@ -489,6 +496,20 @@ class GameDataManager {
     unequipSkill(index: number) {
         this.equippedSkills.splice(index, 1);
         this.save();
+    }
+
+    equipConsumable(slotIndex: number, itemId: string) {
+        if (slotIndex >= 0 && slotIndex < 5) {
+            this.equippedConsumables[slotIndex] = itemId;
+            this.save();
+        }
+    }
+
+    unequipConsumable(slotIndex: number) {
+        if (slotIndex >= 0 && slotIndex < 5) {
+            this.equippedConsumables[slotIndex] = null;
+            this.save();
+        }
     }
 
     sellItemById(itemId: string): boolean {
@@ -1088,11 +1109,15 @@ class MapScene extends Phaser.Scene {
         const btnItems = document.createElement('button'); btnItems.innerText = 'INVENTORY'; btnItems.className = 'cyber-btn';
         const btnSkills = document.createElement('button'); btnSkills.innerText = 'SKILLS'; btnSkills.className = 'cyber-btn';
         const btnGuitars = document.createElement('button'); btnGuitars.innerText = 'GUITARS'; btnGuitars.className = 'cyber-btn';
+        // ★追加: ITEM SLOTS tab
+        const btnSlots = document.createElement('button'); btnSlots.innerText = 'ITEM SLOTS'; btnSlots.className = 'cyber-btn';
 
         btnItems.onclick = () => { this.statusTab = 'items'; render(); };
         btnSkills.onclick = () => { this.statusTab = 'skills'; render(); };
         btnGuitars.onclick = () => { this.statusTab = 'guitars'; render(); };
-        tabs.appendChild(btnItems); tabs.appendChild(btnSkills); tabs.appendChild(btnGuitars);
+        btnSlots.onclick = () => { this.statusTab = 'slots' as any; render(); };
+
+        tabs.appendChild(btnItems); tabs.appendChild(btnSkills); tabs.appendChild(btnGuitars); tabs.appendChild(btnSlots);
         ui.content.appendChild(tabs);
 
         const mainArea = document.createElement('div');
@@ -1152,34 +1177,104 @@ class MapScene extends Phaser.Scene {
 
             if (this.statusTab === 'items') {
                 colBag.innerHTML = `<h3 style="color:var(--neon-blue)">STORAGE</h3>`;
-                this.groupItems(DataManager.inventory).forEach(group => {
-                    const row = document.createElement('div'); row.className = 'item-list-row';
-                    const action = group.item.category === 'consumable' ? 'USE' : 'EQUIP';
-                    const color = this.getRarityColor(group.item.rarity);
 
-                    row.innerHTML = `
-                  <div style="flex:1">
-                    <b style="color:${color}">${getTxItemName(group.item)}</b> x${group.count}<br>
-                    <small style="color:#ccc">${getTxItemDesc(group.item)}</small>
-                  </div>`;
+                const categories = ['consumable', 'accessory', 'effect'] as const;
+                const catNames: Record<string, string> = {
+                    'consumable': '💊 CONSUMABLES (USE)',
+                    'accessory': '🔧 PARTS (PASSIVE)',
+                    'effect': '🎛️ EFFECTS (PEDALS)'
+                };
 
-                    const btn = document.createElement('button');
-                    btn.className = 'cyber-btn';
-                    btn.innerText = action;
-                    btn.onclick = () => {
-                        const idx = DataManager.inventory.findIndex(i => i.id === group.item.id);
-                        if (idx > -1) {
-                            if (group.item.category === 'consumable') {
-                                if (DataManager.consumeItem(DataManager.inventory[idx])) { this.showMessage(`Used ${getTxItemName(group.item)}`); render(); }
+                categories.forEach(cat => {
+                    const catItems = DataManager.inventory.filter(i => i.category === cat);
+                    if (catItems.length === 0) return;
+
+                    const catHeader = document.createElement('div');
+                    catHeader.innerHTML = `<h4 style="color:var(--neon-pink); border-bottom:1px solid #444; margin-top:15px; margin-bottom:5px; padding-bottom:2px;">${catNames[cat]}</h4>`;
+                    list.appendChild(catHeader);
+
+                    this.groupItems(catItems).forEach(group => {
+                        const row = document.createElement('div'); row.className = 'item-list-row';
+                        const color = this.getRarityColor(group.item.rarity);
+
+                        row.innerHTML = `
+                      <div style="flex:1">
+                        <b style="color:${color}">${getTxItemName(group.item)}</b> x${group.count}<br>
+                        <small style="color:#ccc">${getTxItemDesc(group.item)}</small>
+                      </div>`;
+
+                        const btnContainer = document.createElement('div');
+                        row.appendChild(btnContainer);
+
+                        if (group.item.category === 'consumable') {
+                            const btnUse = document.createElement('button');
+                            btnUse.className = 'cyber-btn'; btnUse.innerText = 'USE';
+                            btnUse.onclick = () => {
+                                if (DataManager.consumeItem(group.item).success) { this.showMessage(`Used ${getTxItemName(group.item)}`); render(); }
                                 else { this.showMessage("Cannot use now"); }
-                            } else {
-                                if (DataManager.equippedItems.length >= DataManager.maxEquipSlots) { this.showMessage("Slots Full"); }
-                                else { DataManager.equipItem(idx); render(); }
-                            }
+                            };
+                            btnContainer.appendChild(btnUse);
+
+                            const btnEquip = document.createElement('button');
+                            btnEquip.className = 'cyber-btn'; btnEquip.innerText = 'EQUIP';
+                            btnEquip.style.marginLeft = '5px';
+                            btnEquip.onclick = () => {
+                                // Show Slot Selector
+                                const slots = document.createElement('div');
+                                slots.style.position = 'fixed'; slots.style.top = '50%'; slots.style.left = '50%';
+                                slots.style.transform = 'translate(-50%, -50%)'; slots.style.background = '#000';
+                                slots.style.border = '2px solid #0f0'; slots.style.padding = '20px'; slots.style.zIndex = '10000';
+                                slots.innerHTML = '<h3>SELECT SLOT</h3>';
+                                [0, 1, 2, 3, 4].forEach(i => {
+                                    const b = document.createElement('button');
+                                    b.className = 'cyber-btn';
+
+                                    const currentId = DataManager.equippedConsumables[i];
+                                    let label = `Slot ${i + 1}`;
+                                    if (currentId) {
+                                        const currentItem = DataManager.inventory.find(inv => inv.id === currentId);
+                                        if (currentItem) label += `: ${getTxItemName(currentItem)}`;
+                                        else label += ": (Unknown)";
+                                    } else {
+                                        label += ": (Empty)";
+                                    }
+
+                                    b.innerText = label;
+                                    b.style.margin = '5px';
+                                    b.style.display = 'block'; // Make them stack
+                                    b.style.width = '100%';
+
+                                    b.onclick = () => {
+                                        DataManager.equipConsumable(i, group.item.id);
+                                        document.body.removeChild(slots);
+                                        this.showMessage(`Equipped to Slot ${i + 1}`);
+                                        render();
+                                    };
+                                    slots.appendChild(b);
+                                });
+                                const close = document.createElement('button');
+                                close.className = 'cyber-btn danger'; close.innerText = 'CANCEL';
+                                close.onclick = () => document.body.removeChild(slots);
+                                slots.appendChild(close);
+                                document.body.appendChild(slots);
+                            };
+                            btnContainer.appendChild(btnEquip);
+
+                        } else { // Equipment
+                            const btn = document.createElement('button');
+                            btn.className = 'cyber-btn';
+                            btn.innerText = 'EQUIP';
+                            btn.onclick = () => {
+                                const idx = DataManager.inventory.findIndex(i => i.id === group.item.id);
+                                if (idx > -1) {
+                                    if (DataManager.equippedItems.length >= DataManager.maxEquipSlots) { this.showMessage("Slots Full"); }
+                                    else { DataManager.equipItem(idx); render(); }
+                                }
+                            };
+                            btnContainer.appendChild(btn);
                         }
-                    };
-                    row.appendChild(btn);
-                    list.appendChild(row);
+                        list.appendChild(row);
+                    });
                 });
             } else if (this.statusTab === 'guitars') {
                 colBag.innerHTML = `<h3 style="color:var(--neon-blue)">GUITAR COLLECTION</h3>`;
@@ -1204,6 +1299,62 @@ class MapScene extends Phaser.Scene {
                         };
                         row.appendChild(btn);
                     }
+                    list.appendChild(row);
+                });
+            } else if (this.statusTab === 'slots') {
+                // ★追加: ITEM SLOTS TAB CONTENT
+                colBag.innerHTML = `<h3 style="color:var(--neon-blue)">BATTLE BELT (SLOTS)</h3>`;
+
+                const help = document.createElement('p');
+                help.style.color = '#aaa'; help.style.fontSize = '0.9em';
+                help.innerText = "Assign consumables to slots 1-5 for quick access during battle.";
+                colBag.appendChild(help);
+
+                DataManager.equippedConsumables.forEach((id, i) => {
+                    const row = document.createElement('div'); row.className = 'item-list-row';
+                    row.style.border = '1px solid var(--neon-pink)';
+
+                    let name = "EMPTY";
+                    let desc = "No item assigned";
+                    let icon = "Checking...";
+
+                    if (id) {
+                        let item = DataManager.inventory.find(inv => inv.id === id);
+                        let count = 0;
+
+                        if (item) {
+                            count = DataManager.inventory.filter(inv => inv.id === id).length;
+                        } else {
+                            // Fallback to Master Data if not in inventory (Count = 0)
+                            item = DataManager.itemMaster.find(m => m.id === id);
+                        }
+
+                        if (item) {
+                            name = getTxItemName(item);
+                            desc = getTxItemDesc(item);
+                            icon = `x${count}`;
+                        } else {
+                            name = "Unknown (Invalid ID)";
+                            desc = "Item data not found";
+                        }
+                    }
+
+                    row.innerHTML = `
+                      <div style="flex:1">
+                        <b style="color:var(--neon-yellow)">SLOT ${i + 1}: ${name}</b> <span style="font-size:0.8em; color:var(--neon-green)">${id ? icon : ''}</span><br>
+                        <small style="color:#ccc">${desc}</small>
+                      </div>`;
+
+                    const btnClear = document.createElement('button');
+                    btnClear.className = 'cyber-btn danger';
+                    btnClear.innerText = 'UNEQUIP';
+                    if (!id) btnClear.style.visibility = 'hidden';
+                    btnClear.onclick = () => {
+                        DataManager.unequipConsumable(i);
+                        render();
+                    };
+                    row.appendChild(btnClear);
+
                     list.appendChild(row);
                 });
             } else {
@@ -1531,6 +1682,14 @@ class GameScene extends Phaser.Scene {
 
         this.createHUD();
         this.createMobileUI();
+        this.updateHUD(); // ★Fix: Call updateHUD after Mobile UI is ready so item labels update immediatedly
+    }
+
+    getDifficultyLevel(): number {
+        if (!DataManager.isPracticeMode) return DataManager.currentStage;
+        // Practice Mode: Scale difficulty every 10 kills
+        // Level 1 (0-9 kills), Level 2 (10-19), etc.
+        return 1 + Math.floor(this.killCount / 10);
     }
 
     spawnLoop() {
@@ -1539,7 +1698,7 @@ class GameScene extends Phaser.Scene {
 
         this.spawnEnemy();
 
-        const stage = DataManager.currentStage;
+        const stage = this.getDifficultyLevel();
         // Delay logic adjusted: Slower pace. Min 500ms.
         const delay = Math.max(500, 1500 - (stage * 100));
         this.time.delayedCall(delay, this.spawnLoop, [], this);
@@ -1559,7 +1718,61 @@ class GameScene extends Phaser.Scene {
             case 2: x = Phaser.Math.Between(0, w); y = -50; break;
             case 3: x = Phaser.Math.Between(0, w); y = h + 50; break;
         }
-        this.enemies.create(x, y, 'enemy').setScale(2);
+
+        // ★Enemy Type Logic
+        const stage = this.getDifficultyLevel();
+        const rand = Math.random();
+        let type = 'normal';
+
+        // Spawn Chances (Max 100% cap implicitly handled by logic structure)
+        const rareChance = Math.min(0.2, stage * 0.01); // Max 20%
+        const tankChance = Math.min(0.3, (stage - 3) * 0.05); // Starts Stage 4
+        const fastChance = Math.min(0.4, (stage - 1) * 0.05); // Starts Stage 2
+
+        if (rand < rareChance) type = 'rare';
+        else if (rand < rareChance + tankChance) type = 'tank';
+        else if (rand < rareChance + tankChance + fastChance) type = 'fast';
+
+        const e = this.enemies.create(x, y, 'enemy').setScale(2);
+
+        // Stats based on type
+        // Base Stats
+        let hp = 10 + (stage * 5);
+        let speed = 80 + (stage * 5);
+        let exp = 5;
+
+        // Practice Mode scaling boost (make them tougher faster)
+        if (DataManager.isPracticeMode) {
+            hp += stage * 5; // Extra HP scaling in practice
+            speed += stage * 2;
+        }
+
+        if (type === 'fast') {
+            e.setTint(0x00ffff); // Cyan
+            hp *= 0.6;
+            speed *= 1.5;
+            exp = 8;
+        } else if (type === 'tank') {
+            e.setTint(0xff5500); // Orange/Red
+            e.setScale(2.5);
+            hp *= 3;
+            speed *= 0.6;
+            exp = 15;
+        } else if (type === 'rare') {
+            e.setTint(0xffff00); // Gold
+            hp *= 1.5;
+            speed *= 2.0; // Fast!
+            exp = 50;
+        } else {
+            e.setTint(0x0aff0a); // Normal Green
+        }
+
+        e.setData('hp', hp);
+        e.setData('maxHp', hp);
+        e.setData('speed', speed);
+        e.setData('exp', exp);
+        e.setData('type', type);
+        e.setData('attack', 10 + (stage * 2)); // Dynamic Attack Power
     }
 
     createMobileUI() {
@@ -1721,12 +1934,43 @@ class GameScene extends Phaser.Scene {
         this.mpBar.width = 200 * mpRatio;
         this.txtStatus.setText(`${DataManager.currentHp}/${DataManager.maxHp}\n${DataManager.currentMp}/${DataManager.maxMp}`);
 
-        const consumables = DataManager.inventory.filter(i => i.category === 'consumable');
+        // Logic: Consumables Priority
+        // 1. Equipped Slots
+        // 2. Dynamic Fill from Inventory (excluding equipped)
+
+        const slots: (ItemData | null)[] = [null, null, null, null, null];
+        const assignedIds = new Set<string>();
+
+        // Fill equipped
+        DataManager.equippedConsumables.forEach((id, i) => {
+            if (id) {
+                const item = DataManager.inventory.find(inv => inv.id === id);
+                if (item) {
+                    slots[i] = item;
+                    assignedIds.add(id);
+                }
+            }
+        });
+
+        // Fill remaining with other consumables
+        const others = DataManager.inventory.filter(i => i.category === 'consumable' && !assignedIds.has(i.id));
+        let otherIdx = 0;
+        for (let i = 0; i < 5; i++) {
+            if (!slots[i] && otherIdx < others.length) {
+                slots[i] = others[otherIdx++];
+            }
+        }
+
         this.itemButtons.forEach((btn: any, i) => {
-            if (consumables[i]) {
+            const item = slots[i];
+            // Store item ID on button for usage
+            btn.setData('itemId', item ? item.id : null);
+
+            if (item) {
                 btn.setFillStyle(0x00ff00, 0.5);
                 btn.setStrokeStyle(2, 0x0aff0a);
-                this.itemLabels[i].setText(getTxItemName(consumables[i]).substring(0, 10));
+                const count = DataManager.inventory.filter(inv => inv.id === item.id).length;
+                this.itemLabels[i].setText(`${getTxItemName(item).substring(0, 8)}\nx${count}`);
             } else {
                 btn.setFillStyle(0x111111, 0.8);
                 btn.setStrokeStyle(1, 0x333333);
@@ -1755,16 +1999,23 @@ class GameScene extends Phaser.Scene {
     }
 
     useConsumable(index: number) {
-        const items = DataManager.inventory.filter(i => i.category === 'consumable');
-        if (items[index]) {
-            const res = DataManager.consumeItem(items[index]);
-            if (res.success) {
-                this.metalSynth.triggerAttackRelease("C6", "16n");
-                if (res.type === 'buff_speed') this.applyBuff('speed');
-                this.updateHUD();
-                this.showMessageFloat("USED!");
+        const btn = this.itemButtons[index];
+        const itemId = btn.getData('itemId'); // Get ID from button data logic in updateHUD
+
+        if (itemId) {
+            const item = DataManager.inventory.find(i => i.id === itemId);
+            if (item) {
+                const res = DataManager.consumeItem(item);
+                if (res.success) {
+                    this.metalSynth.triggerAttackRelease("C6", "16n");
+                    if (res.type === 'buff_speed') this.applyBuff('speed');
+                    this.updateHUD(); // Re-calc slots
+                    this.showMessageFloat("USED!");
+                } else {
+                    this.showMessageFloat("FULL!");
+                }
             } else {
-                this.showMessageFloat("FULL!");
+                this.updateHUD(); // Item might be gone
             }
         } else {
             this.showMessageFloat("EMPTY!");
@@ -1794,7 +2045,15 @@ class GameScene extends Phaser.Scene {
 
     hitPlayer(_player: any, _enemy: any) {
         if (this.isInvincible) return;
-        DataManager.currentHp -= 10; this.updateHUD();
+
+        // Attack Power Calculation
+        let damage = _enemy.getData('attack');
+        if (!damage) {
+            const stage = this.getDifficultyLevel();
+            damage = 10 + (stage * 2);
+        }
+
+        DataManager.currentHp -= damage; this.updateHUD();
         this.cameras.main.shake(100, 0.01); this.synth.triggerAttackRelease(["C2", "F#2"], "8n");
         if (DataManager.currentHp <= 0) this.gameOver();
         else {
@@ -1838,8 +2097,11 @@ class GameScene extends Phaser.Scene {
             const target = this.getNearestEnemy();
             if (target) { this.fireBullet(target); this.lastFired = time + this.stats.fireRate; }
         }
-        const speed = 80 + (DataManager.currentStage * 10);
-        this.enemies.getChildren().forEach((e: any) => this.physics.moveToObject(e, this.player, speed));
+
+        this.enemies.getChildren().forEach((e: any) => {
+            const speed = e.getData('speed') || (80 + (DataManager.currentStage * 10)); // Use instance speed
+            this.physics.moveToObject(e, this.player, speed);
+        });
 
         if (this.isBossActive && this.bossObject) {
             this.physics.moveToObject(this.bossObject, this.player, 50);
@@ -1896,15 +2158,39 @@ class GameScene extends Phaser.Scene {
             return;
         }
 
+        // Normal Enemies with HP
+        let hp = enemy.getData('hp') || 1;
+        hp -= this.stats.bulletSize; // Bullet Size acts as Damage? (Or 1 hit?)
+        // Let's assume Bullet Size = Power for now (as per logic).
+        // Check if bullet size > hp? Or hp accumulates damage?
+        // Logic before was 1-hit kill.
+        // Let's treat bullet hit as damage.
+        // But bullet.size is usually ~20.
+        // Enemy HP is ~10-100. So it works.
+        enemy.setData('hp', hp);
+
+        if (hp > 0) {
+            // Hit Flash
+            this.tweens.add({ targets: enemy, alpha: 0.3, duration: 50, yoyo: true });
+            // Knockback
+            const angle = Phaser.Math.Angle.Between(this.player.x, this.player.y, enemy.x, enemy.y);
+            const kb = new Phaser.Math.Vector2(Math.cos(angle), Math.sin(angle)).scale(50);
+            enemy.x += kb.x; enemy.y += kb.y;
+            return;
+        }
+
         // Always give rewards
         DataManager.money += 10;
-        if (DataManager.gainExp(5)) { // ★Boost: 5 EXP per kill
+        if (DataManager.gainExp(enemy.getData('exp') || 5)) {
             this.updateHUD();
             this.showMessageFloat("LEVEL UP!");
         }
 
         // Chance for loot
-        if (Math.random() < 0.2) this.spawnLoot(enemy.x, enemy.y);
+        let dropChance = 0.2;
+        if (enemy.getData('type') === 'rare') dropChance = 1.0;
+
+        if (Math.random() < dropChance) this.spawnLoot(enemy.x, enemy.y);
 
         this.playRandomLick();
         this.tweens.add({ targets: enemy, scale: 0, duration: 200, onComplete: () => enemy.destroy() });
@@ -1923,9 +2209,23 @@ class GameScene extends Phaser.Scene {
         this.synth.triggerAttackRelease(["C4", "E4", "G4", "C5"], "2n");
         const txt = this.add.text(this.scale.width / 2, this.scale.height / 2, "STAGE CLEAR!", { fontSize: '64px', color: '#ff0', stroke: '#000', strokeThickness: 6 }).setOrigin(0.5).setScrollFactor(0).setDepth(200);
         if (DataManager.currentStage < 10) {
+            // ★追加: ステージクリア褒賞 (ギャラ)
+            // 例: Stage 1 = 1000G, Stage 10 = 10000G?
+            // User requested: "Lv1で10000G". Wait, did they mean Stage 1 gives 10000G? Or scaling?
+            // "各ステージのボス攻略後は、それぞれの難易度に応じたギャラが出るようにしましょう。レベル1でギャラ10000Gなど。"
+            // Assuming "Level 1" refers to Stage 1. Let's make it generous.
+            const bonus = DataManager.currentStage * 10000;
+            DataManager.money += bonus;
+
+            const salaryTxt = this.add.text(this.scale.width / 2, this.scale.height / 2 + 80, `GIG PAYMENT: ${bonus} G`, {
+                fontFamily: 'Orbitron', fontSize: '32px', color: '#0aff0a', stroke: '#000', strokeThickness: 4
+            }).setOrigin(0.5).setScrollFactor(0).setDepth(201);
+
+            this.tweens.add({ targets: salaryTxt, scale: 1.2, duration: 200, yoyo: true, repeat: 3 });
+
             DataManager.currentStage++;
             DataManager.save();
-            this.time.delayedCall(3000, () => this.returnToMap());
+            this.time.delayedCall(4000, () => this.returnToMap());
         } else {
             txt.setText("LEGENDARY!");
             this.add.text(this.scale.width / 2, this.scale.height / 2 + 100, "BUDOKAN CONQUERED", { fontSize: '32px', color: '#fff', stroke: '#000', strokeThickness: 4 }).setOrigin(0.5).setScrollFactor(0).setDepth(200);
