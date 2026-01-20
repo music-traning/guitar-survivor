@@ -2202,6 +2202,53 @@ class GameScene extends Phaser.Scene {
 
         if (this.isBossActive && this.bossObject) {
             this.physics.moveToObject(this.bossObject, this.player, 50);
+
+            // Boss Laser Logic
+            if (!this.isLaserActive && time > this.bossLastLaser + 8000) { // 8s Cooldown
+                this.bossLastLaser = time;
+                this.fireBossLaser();
+            }
+
+            if (this.isLaserActive && this.laserGraphics) {
+                this.laserGraphics.clear();
+                const start = new Phaser.Math.Vector2(this.bossObject.x, this.bossObject.y);
+
+                if (this.laserState === 'charging') {
+                    // Tracking Player slowly
+                    const targetAngle = Phaser.Math.Angle.Between(this.bossObject.x, this.bossObject.y, this.player.x, this.player.y);
+                    this.laserAngle = Phaser.Math.Angle.RotateTo(this.laserAngle, targetAngle, 0.05); // Slow tracking
+
+                    const end = new Phaser.Math.Vector2(Math.cos(this.laserAngle), Math.sin(this.laserAngle)).scale(1000).add(start);
+
+                    // Draw Warning Line (Red, Thin, Blinking)
+                    const alpha = Math.sin(time / 50) * 0.5 + 0.5;
+                    this.laserGraphics.lineStyle(2, 0xff0000, alpha);
+                    this.laserGraphics.strokeLineShape(new Phaser.Geom.Line(start.x, start.y, end.x, end.y));
+                }
+                else if (this.laserState === 'firing') {
+                    // Fixed Angle, Big Beam
+                    const end = new Phaser.Math.Vector2(Math.cos(this.laserAngle), Math.sin(this.laserAngle)).scale(1000).add(start);
+
+                    // Core
+                    this.laserGraphics.lineStyle(40, 0xffffff, 1);
+                    this.laserGraphics.strokeLineShape(new Phaser.Geom.Line(start.x, start.y, end.x, end.y));
+                    // Glow
+                    this.laserGraphics.lineStyle(60, 0x00ffff, 0.5);
+                    this.laserGraphics.strokeLineShape(new Phaser.Geom.Line(start.x, start.y, end.x, end.y));
+
+                    // Hit Detection (Once per frame during firing is okay, or use a timer. Frame is safer for fast beam)
+                    // Simple Line to Circle
+                    const line = new Phaser.Geom.Line(start.x, start.y, end.x, end.y);
+                    const playerCircle = new Phaser.Geom.Circle(this.player.x, this.player.y, 20); // Approx hitbox
+
+                    if (Phaser.Geom.Intersects.LineToCircle(line, playerCircle)) {
+                        // DAMAGE!
+                        // Mock enemy object for hitPlayer calculation
+                        const laserSource = { x: this.bossObject.x, y: this.bossObject.y, getData: (key: string) => (key === 'attack' ? 50 : 0) }; // 50 Damage!
+                        this.hitPlayer(this.player, laserSource);
+                    }
+                }
+            }
         }
 
         // Homing Bullets Logic
@@ -2490,7 +2537,51 @@ class GameScene extends Phaser.Scene {
             });
         }
     }
+    // Boss Laser Properties
+    private bossLastLaser: number = 0;
+    private isLaserActive: boolean = false;
+    private laserState: 'idle' | 'charging' | 'firing' = 'idle';
+    private laserGraphics: Phaser.GameObjects.Graphics | null = null;
+    private laserAngle: number = 0;
 
+    fireBossLaser() {
+        if (!this.bossObject || !this.bossObject.active) return;
+        this.isLaserActive = true;
+        this.laserState = 'charging';
+
+        // Initial Aim
+        this.laserAngle = Phaser.Math.Angle.Between(this.bossObject.x, this.bossObject.y, this.player.x, this.player.y);
+
+        this.laserGraphics = this.add.graphics().setDepth(50);
+
+        // Sound Warning
+        if (Tone && Tone.context.state === 'running') this.metalSynth.triggerAttackRelease("G1", "2n");
+        this.showMessageFloat("CAUTION!!", '#ff0000', '32px');
+
+        // Charge for 1.5s then Fire
+        this.time.delayedCall(1500, () => {
+            if (!this.bossObject || !this.bossObject.active) { this.cleanupLaser(); return; }
+            this.laserState = 'firing';
+            // Fire Sound
+            if (Tone && Tone.context.state === 'running') this.metalSynth.triggerAttackRelease("C1", "1n");
+            this.cameras.main.shake(300, 0.02);
+
+            // Fire Duration 0.5s then Cleanup
+            this.time.delayedCall(500, () => {
+                this.cleanupLaser();
+            });
+        });
+    }
+
+    cleanupLaser() {
+        this.isLaserActive = false;
+        this.laserState = 'idle';
+        if (this.laserGraphics) {
+            this.laserGraphics.clear();
+            this.laserGraphics.destroy();
+            this.laserGraphics = null;
+        }
+    }
     returnToMap() {
         this.physics.pause();
         this.scene.start('map-scene');
