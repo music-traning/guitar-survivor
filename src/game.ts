@@ -419,6 +419,21 @@ class GameDataManager {
                     if (saved && saved.learned) s.learned = true;
                 });
             }
+
+            // ★Fix for Missing Guitars (Corrupted Save or Update) (Existing user issue)
+            if (this.guitarMaster.length > 0) {
+                const ownedGuitarId = this.currentGuitar?.id;
+                const shopGuitarIds = new Set(this.shopStock.filter(i => 'tags' in i).map(i => i.id));
+
+                this.guitarMaster.forEach(g => {
+                    // Not equipped AND Not in shop => Missing (Add to shop)
+                    if (g.id !== ownedGuitarId && !shopGuitarIds.has(g.id)) {
+                        console.log("Restocking missing guitar:", g.name_en);
+                        this.shopStock.push({ ...g });
+                    }
+                });
+            }
+
             return true;
         }
         return false;
