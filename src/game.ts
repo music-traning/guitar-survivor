@@ -903,6 +903,11 @@ class MapScene extends Phaser.Scene {
             this.scene.start('game-scene');
         });
 
+        // Add Storage Button (Symmetrical to Studio)
+        this.createMapSpot(w * 0.8, studioY, '📦 STORAGE\n(Inventory)', 0xaaaaaa, () => {
+            this.openStorageUI(); // Use dedicated Storage UI
+        });
+
         this.createMapSpot(w * 0.2, cy + 100, '🏠 SHOP', 0x00ffff, () => this.openShopUI());
         this.createMapSpot(w * 0.8, cy + 100, '🏯 MASTER', 0xffaa00, () => this.openMasterUI());
         this.createMapSpot(cx, gearY, '🎸 GEAR', 0x00ff00, () => this.openStatusUI());
@@ -1092,15 +1097,103 @@ class MapScene extends Phaser.Scene {
     }
 
     // --- UI Contents ---
+    // NEW: Dedicated Storage (Inventory) View
+    openStorageUI() {
+        const ui = this.createBaseUI('STORAGE');
+
+        const tabs = document.createElement('div');
+        tabs.style.marginBottom = '15px';
+
+        const btnAll = document.createElement('button'); btnAll.innerText = 'ALL'; btnAll.className = 'cyber-btn';
+        const btnGuitars = document.createElement('button'); btnGuitars.innerText = 'GUITARS'; btnGuitars.className = 'cyber-btn';
+        const btnEffects = document.createElement('button'); btnEffects.innerText = 'EFFECTS'; btnEffects.className = 'cyber-btn';
+        const btnItems = document.createElement('button'); btnItems.innerText = 'ITEMS'; btnItems.className = 'cyber-btn';
+        const btnDrugs = document.createElement('button'); btnDrugs.innerText = 'DRUGS'; btnDrugs.className = 'cyber-btn';
+
+        let currentFilter = 'all';
+
+        const updateActiveTab = () => {
+            [btnAll, btnGuitars, btnEffects, btnItems, btnDrugs].forEach(b => b.style.background = '');
+            switch (currentFilter) {
+                case 'all': btnAll.style.background = 'var(--neon-green)'; break;
+                case 'guitar': btnGuitars.style.background = 'var(--neon-green)'; break;
+                case 'effect': btnEffects.style.background = 'var(--neon-green)'; break;
+                case 'accessory': btnItems.style.background = 'var(--neon-green)'; break;
+                case 'consumable': btnDrugs.style.background = 'var(--neon-green)'; break;
+            }
+        };
+
+        btnAll.onclick = () => { currentFilter = 'all'; updateActiveTab(); render(); };
+        btnGuitars.onclick = () => { currentFilter = 'guitar'; updateActiveTab(); render(); };
+        btnEffects.onclick = () => { currentFilter = 'effect'; updateActiveTab(); render(); };
+        btnItems.onclick = () => { currentFilter = 'accessory'; updateActiveTab(); render(); };
+        btnDrugs.onclick = () => { currentFilter = 'consumable'; updateActiveTab(); render(); };
+
+        updateActiveTab();
+        tabs.appendChild(btnAll); tabs.appendChild(btnGuitars); tabs.appendChild(btnEffects); tabs.appendChild(btnItems); tabs.appendChild(btnDrugs);
+        ui.content.appendChild(tabs);
+
+        const mainArea = document.createElement('div');
+        ui.content.appendChild(mainArea);
+
+        const render = () => {
+            const scrollPos = ui.content.scrollTop;
+            mainArea.innerHTML = '';
+
+            const list = document.createElement('div');
+            list.style.height = '400px'; list.style.overflowY = 'auto';
+
+            let itemsToShow: any[] = [];
+            if (currentFilter === 'all') itemsToShow = [...DataManager.inventory, ...DataManager.ownedGuitars.map(g => ({ ...g, isGuitar: true }))];
+            else if (currentFilter === 'guitar') itemsToShow = DataManager.ownedGuitars.map(g => ({ ...g, isGuitar: true }));
+            else itemsToShow = DataManager.inventory.filter(i => i.category === currentFilter);
+
+            if (itemsToShow.length === 0) list.innerHTML = `<p style="color:#666; text-align:center; margin-top:50px;">NO ITEMS FOUND</p>`;
+            else {
+                const groups = new Map<string, { item: any, count: number }>();
+                itemsToShow.forEach(item => {
+                    const id = item.id;
+                    if (!groups.has(id)) groups.set(id, { item, count: 0 });
+                    groups.get(id)!.count++;
+                });
+
+                Array.from(groups.values()).forEach(g => {
+                    const row = document.createElement('div'); row.className = 'item-list-row';
+                    const isGuitar = 'isGuitar' in g.item || 'speed' in g.item;
+                    let name = getTxItemName(g.item);
+                    let desc = getTxItemDesc(g.item);
+                    let color = isGuitar ? '#ff00ff' : this.getRarityColor(g.item.rarity);
+                    let info = "";
+
+                    if (isGuitar) {
+                        info = `SPD:${g.item.speed} RATE:${g.item.fireRate}`;
+                        if (DataManager.currentGuitar && DataManager.currentGuitar.id === g.item.id) {
+                            info += ` <span style="color:var(--neon-green)">[EQUIPPED]</span>`;
+                            row.style.border = '1px solid var(--neon-green)';
+                        }
+                    } else {
+                        if (g.item.category === 'accessory' || g.item.category === 'effect') info = this.getEffectString(g.item);
+                    }
+
+                    row.innerHTML = `<div style="flex:1"><b style="color:${color}">${name}</b> x${g.count}<br><small style="color:#ccc">${desc}</small><br><small style="color:var(--neon-green)">${info}</small></div>`;
+                    list.appendChild(row);
+                });
+            }
+            mainArea.appendChild(list);
+            setTimeout(() => { ui.content.scrollTop = scrollPos; }, 0);
+        };
+        render();
+    }
+
+    // RESTORED: Gear & Skills Management UI
     openStatusUI() {
         const ui = this.createBaseUI('GEAR & SKILLS');
 
         const tabs = document.createElement('div');
         tabs.style.marginBottom = '15px';
-        const btnItems = document.createElement('button'); btnItems.innerText = 'INVENTORY'; btnItems.className = 'cyber-btn';
+        const btnItems = document.createElement('button'); btnItems.innerText = 'GEAR'; btnItems.className = 'cyber-btn';
         const btnSkills = document.createElement('button'); btnSkills.innerText = 'SKILLS'; btnSkills.className = 'cyber-btn';
         const btnGuitars = document.createElement('button'); btnGuitars.innerText = 'GUITARS'; btnGuitars.className = 'cyber-btn';
-        // ★追加: ITEM SLOTS tab
         const btnSlots = document.createElement('button'); btnSlots.innerText = 'ITEM SLOTS'; btnSlots.className = 'cyber-btn';
 
         btnItems.onclick = () => { this.statusTab = 'items'; render(); };
@@ -1115,9 +1208,7 @@ class MapScene extends Phaser.Scene {
         ui.content.appendChild(mainArea);
 
         const render = () => {
-            // Save scroll position
             const scrollPos = ui.content.scrollTop;
-
             mainArea.innerHTML = '';
             const stats = DataManager.calculateStats();
             const isWide = window.innerWidth > 800;
@@ -1126,330 +1217,81 @@ class MapScene extends Phaser.Scene {
             layout.style.gridTemplateColumns = isWide ? '1fr 1fr 1fr' : '1fr';
             layout.style.gap = '20px';
 
-            // STATS COLUMN
             const colStats = document.createElement('div');
-            colStats.innerHTML = `<h3 style="color:var(--neon-blue)">STATUS</h3>
-        <p>HP: <span style="color:var(--neon-green)">${DataManager.currentHp}/${DataManager.maxHp}</span></p>
-        <p>MP: <span style="color:var(--neon-pink)">${DataManager.currentMp}/${DataManager.maxMp}</span></p>
-        <div style="background:rgba(0,0,0,0.3); padding:10px; border:1px solid #333; margin-top:10px;">
-          <p>⚡ SPD: <span style="color:var(--neon-yellow)">${Math.round(stats.speed)}</span></p>
-          <p>💥 RATE: <span style="color:var(--neon-yellow)">${(1000 / stats.fireRate).toFixed(1)}/s</span></p>
-          <p>📏 SIZE: <span style="color:var(--neon-yellow)">${stats.bulletSize}</span></p>
-        </div>`;
+            colStats.innerHTML = `<h3 style="color:var(--neon-blue)">STATUS</h3><p>HP: <span style="color:var(--neon-green)">${DataManager.currentHp}/${DataManager.maxHp}</span></p><p>MP: <span style="color:var(--neon-pink)">${DataManager.currentMp}/${DataManager.maxMp}</span></p><div style="background:rgba(0,0,0,0.3); padding:10px; border:1px solid #333; margin-top:10px;"><p>⚡ SPD: <span style="color:var(--neon-yellow)">${Math.round(stats.speed)}</span></p><p>💥 RATE: <span style="color:var(--neon-yellow)">${(1000 / stats.fireRate).toFixed(1)}/s</span></p><p>📏 SIZE: <span style="color:var(--neon-yellow)">${stats.bulletSize}</span></p></div>`;
             layout.appendChild(colStats);
 
-            // EQUIPPED COLUMN
-            const colEquip = document.createElement('div');
-            colEquip.innerHTML = `<h3 style="color:var(--neon-blue)">LOADOUT</h3>`;
-
-            const divItemBoard = document.createElement('div'); divItemBoard.innerHTML = `<h4>🔧 MODULES</h4>`;
-            DataManager.equippedItems.forEach((item, i) => {
-                const btn = document.createElement('button');
-                btn.className = 'cyber-btn'; btn.style.width = '100%'; btn.style.textAlign = 'left';
-                btn.innerHTML = `${getTxItemName(item)} <span style="float:right;color:var(--neon-green)">ON</span><br><small style="color:#aaa">${this.getEffectString(item)}</small>`;
-                btn.onclick = () => { DataManager.unequipItem(i); render(); };
-                divItemBoard.appendChild(btn);
-            });
-            colEquip.appendChild(divItemBoard);
-
-            const divSkillDeck = document.createElement('div'); divSkillDeck.style.marginTop = '15px';
-            divSkillDeck.innerHTML = `<h4>🧠 SKILLS</h4>`;
-            DataManager.equippedSkills.forEach((skill, i) => {
-                const btn = document.createElement('button');
-                btn.className = 'cyber-btn danger'; btn.style.width = '100%'; btn.style.textAlign = 'left';
-                btn.innerHTML = `${getTxItemName(skill)} <span style="float:right">MP:${skill.mpCost}</span>`;
-                btn.onclick = () => { DataManager.unequipSkill(i); render(); };
-                divSkillDeck.appendChild(btn);
-            });
-            colEquip.appendChild(divSkillDeck);
             if (this.statusTab === 'items') {
-                layout.appendChild(colEquip);
                 layout.style.gridTemplateColumns = isWide ? '1fr 1fr 1fr' : '1fr';
-            } else {
-                layout.style.gridTemplateColumns = isWide ? '1fr 2fr' : '1fr';
-            }
 
-            // INVENTORY COLUMN
-            const colBag = document.createElement('div');
-            const list = document.createElement('div');
-            list.style.height = '300px'; list.style.overflowY = 'auto';
+                const colLoadout = document.createElement('div');
+                colLoadout.innerHTML = `<h3 style="color:var(--neon-blue)">LOADOUT</h3>`;
+                const divMod = document.createElement('div'); divMod.innerHTML = `<h4>🔧 MODULES (Max ${DataManager.maxEquipSlots})</h4>`;
 
-            if (this.statusTab === 'items') {
-                colBag.innerHTML = `<h3 style="color:var(--neon-blue)">STORAGE</h3>`;
+                if (DataManager.equippedItems.length === 0) divMod.innerHTML += `<p style="color:#666">No modules equipped</p>`;
+                else {
+                    DataManager.equippedItems.forEach((item, i) => {
+                        const btn = document.createElement('button'); btn.className = 'cyber-btn danger'; btn.style.width = '100%'; btn.style.textAlign = 'left';
+                        btn.innerHTML = `${getTxItemName(item)} <span style="float:right;color:var(--neon-green)">ON</span><br><small style="color:#aaa">${this.getEffectString(item)}</small>`;
+                        btn.onclick = () => { DataManager.unequipItem(i); render(); };
+                        divMod.appendChild(btn);
+                    });
+                }
+                colLoadout.appendChild(divMod);
+                layout.appendChild(colLoadout);
 
-                const categories = ['consumable', 'accessory', 'effect'] as const;
-                const catNames: Record<string, string> = {
-                    'consumable': '💊 CONSUMABLES (USE)',
-                    'accessory': '🔧 PARTS (PASSIVE)',
-                    'effect': '🎛️ EFFECTS (PEDALS)'
-                };
+                const colStorage = document.createElement('div');
+                colStorage.innerHTML = `<h3 style="color:var(--neon-blue)">STORAGE</h3>`;
+                const list = document.createElement('div'); list.style.height = '400px'; list.style.overflowY = 'auto';
+                const gearItems = DataManager.inventory.filter(i => i.category === 'accessory' || i.category === 'effect');
 
-                categories.forEach(cat => {
-                    const catItems = DataManager.inventory.filter(i => i.category === cat);
-                    if (catItems.length === 0) return;
-
-                    const catHeader = document.createElement('div');
-                    catHeader.innerHTML = `<h4 style="color:var(--neon-pink); border-bottom:1px solid #444; margin-top:15px; margin-bottom:5px; padding-bottom:2px;">${catNames[cat]}</h4>`;
-                    list.appendChild(catHeader);
-
-                    this.groupItems(catItems).forEach(group => {
+                if (gearItems.length === 0) list.innerHTML = `<p style="color:#666">No gear in inventory.</p>`;
+                else {
+                    this.groupItems(gearItems).forEach(group => {
                         const row = document.createElement('div'); row.className = 'item-list-row';
                         const color = this.getRarityColor(group.item.rarity);
-
-                        row.innerHTML = `
-                      <div style="flex:1">
-                        <b style="color:${color}">${getTxItemName(group.item)}</b> x${group.count}<br>
-                        <small style="color:#ccc">${getTxItemDesc(group.item)}</small>
-                      </div>`;
-
-                        const btnContainer = document.createElement('div');
-                        row.appendChild(btnContainer);
-
-                        if (group.item.category === 'consumable') {
-                            const btnUse = document.createElement('button');
-                            btnUse.className = 'cyber-btn'; btnUse.innerText = 'USE';
-                            btnUse.onclick = () => {
-                                if (DataManager.consumeItem(group.item).success) { this.showMessage(`Used ${getTxItemName(group.item)}`); render(); }
-                                else { this.showMessage("Cannot use now"); }
-                            };
-                            btnContainer.appendChild(btnUse);
-
-                            const btnEquip = document.createElement('button');
-                            btnEquip.className = 'cyber-btn'; btnEquip.innerText = 'EQUIP';
-                            btnEquip.style.marginLeft = '5px';
-                            btnEquip.onclick = () => {
-                                // Show Slot Selector (Improved Modal)
-                                const overlay = document.createElement('div');
-                                overlay.className = 'cyber-overlay';
-                                const panel = document.createElement('div');
-                                panel.className = 'cyber-panel item-selector-panel';
-                                panel.innerHTML = `<h3 style="color:var(--neon-green)">SELECT SLOT TO EQUIP</h3>`;
-
-                                [0, 1, 2, 3, 4].forEach(i => {
-                                    const b = document.createElement('button');
-                                    b.className = 'cyber-btn';
-                                    b.style.marginBottom = '10px';
-                                    b.style.width = '100%';
-                                    b.style.padding = '15px'; // Larger touch area
-                                    b.style.textAlign = 'left';
-
-                                    const currentId = DataManager.equippedConsumables[i];
-                                    let label = `<span style="color:var(--neon-yellow)">SLOT ${i + 1}</span>`;
-                                    if (currentId) {
-                                        let cItem = DataManager.inventory.find(inv => inv.id === currentId);
-                                        if (!cItem) cItem = DataManager.itemMaster.find(m => m.id === currentId);
-                                        label += `<br><span style="font-size:0.9em;color:#ccc">Current: ${cItem ? getTxItemName(cItem) : '???'}</span>`;
-                                    } else {
-                                        label += `<br><span style="font-size:0.9em;color:#666">Empty</span>`;
-                                    }
-
-                                    b.innerHTML = label;
-                                    b.onclick = () => {
-                                        DataManager.equipConsumable(i, group.item.id);
-                                        overlay.remove();
-                                        this.showMessage(`Equipped to Slot ${i + 1}`);
-                                        render();
-                                    };
-                                    panel.appendChild(b);
-                                });
-
-                                const close = document.createElement('button');
-                                close.className = 'cyber-btn danger'; close.innerText = 'CANCEL';
-                                close.style.width = '100%'; close.style.marginTop = '10px';
-                                close.onclick = () => overlay.remove();
-                                panel.appendChild(close);
-
-                                overlay.appendChild(panel);
-                                document.body.appendChild(overlay);
-                            };
-                            btnContainer.appendChild(btnEquip);
-
-                        } else { // Equipment
-                            const btn = document.createElement('button');
-                            btn.className = 'cyber-btn';
-                            btn.innerText = 'EQUIP';
-                            btn.onclick = () => {
-                                const idx = DataManager.inventory.findIndex(i => i.id === group.item.id);
-                                if (idx > -1) {
-                                    if (DataManager.equippedItems.length >= DataManager.maxEquipSlots) { this.showMessage("Slots Full"); }
-                                    else { DataManager.equipItem(idx); render(); }
-                                }
-                            };
-                            btnContainer.appendChild(btn);
-                        }
-                        list.appendChild(row);
-                    });
-                });
-            } else if (this.statusTab === 'guitars') {
-                colBag.innerHTML = `<h3 style="color:var(--neon-blue)">GUITAR COLLECTION</h3>`;
-                DataManager.ownedGuitars.forEach(g => {
-                    const row = document.createElement('div'); row.className = 'item-list-row';
-                    const isEquipped = DataManager.currentGuitar && DataManager.currentGuitar.id === g.id;
-                    if (isEquipped) row.style.border = '1px solid var(--neon-green)';
-
-                    row.innerHTML = `
-                  <div style="flex:1">
-                    <b style="color:var(--neon-yellow)">${getTxItemName(g)}</b> ${isEquipped ? '<span style="color:var(--neon-green)">[EQUIPPED]</span>' : ''}<br>
-                    <small style="color:#ccc">SPD:${g.speed} RATE:${g.fireRate}</small>
-                  </div>`;
-
-                    if (!isEquipped) {
-                        const btn = document.createElement('button');
-                        btn.className = 'cyber-btn';
-                        btn.innerText = 'EQUIP';
+                        row.innerHTML = `<div style="flex:1"><b style="color:${color}">${getTxItemName(group.item)}</b> x${group.count}<br><small style="color:#ccc">${getTxItemDesc(group.item)}</small></div>`;
+                        const btn = document.createElement('button'); btn.className = 'cyber-btn'; btn.innerText = 'EQUIP';
                         btn.onclick = () => {
-                            DataManager.equipGuitar(g);
-                            render();
+                            const idx = DataManager.inventory.findIndex(inv => inv.id === group.item.id);
+                            if (idx > -1) {
+                                if (DataManager.equippedItems.length >= DataManager.maxEquipSlots) this.showMessage("Slots Full");
+                                else { DataManager.equipItem(idx); render(); }
+                            }
                         };
-                        row.appendChild(btn);
-                    }
-                    list.appendChild(row);
-                });
-            } else if (this.statusTab === 'slots') {
-                // ★追加: ITEM SLOTS TAB CONTENT
-                colBag.innerHTML = `<h3 style="color:var(--neon-blue)">BATTLE BELT (SLOTS)</h3>`;
+                        row.appendChild(btn); list.appendChild(row);
+                    });
+                }
+                const hint = document.createElement('div'); hint.style.marginTop = '20px'; hint.style.borderTop = '1px solid #333'; hint.style.paddingTop = '10px';
+                hint.innerHTML = `<small style="color:#888">Consumables can be managed in [ITEM SLOTS] tab.</small>`;
+                list.appendChild(hint);
+                colStorage.appendChild(list);
+                layout.appendChild(colStorage);
 
-                const help = document.createElement('p');
-                help.style.color = '#aaa'; help.style.fontSize = '0.9em';
-                help.innerText = "Assign consumables to slots 1-5 for quick access during battle.";
-                colBag.appendChild(help);
+            } else if (this.statusTab === 'skills') {
+                layout.style.gridTemplateColumns = isWide ? '1fr 1fr 1fr' : '1fr';
+                const colLoadout = document.createElement('div'); colLoadout.innerHTML = `<h3 style="color:var(--neon-blue)">LOADOUT</h3>`;
+                const divSkill = document.createElement('div'); divSkill.innerHTML = `<h4>🧠 MEMORY</h4>`;
 
-                DataManager.equippedConsumables.forEach((id, i) => {
-                    const row = document.createElement('div'); row.className = 'item-list-row';
-                    row.style.border = '1px solid var(--neon-pink)';
+                if (DataManager.equippedSkills.length === 0) divSkill.innerHTML += `<p style="color:#666">No skills set</p>`;
+                else {
+                    DataManager.equippedSkills.forEach((skill, i) => {
+                        const btn = document.createElement('button'); btn.className = 'cyber-btn danger'; btn.style.width = '100%'; btn.style.textAlign = 'left';
+                        btn.innerHTML = `${getTxItemName(skill)} <span style="float:right">MP:${skill.mpCost}</span>`;
+                        btn.onclick = () => { DataManager.unequipSkill(i); render(); };
+                        divSkill.appendChild(btn);
+                    });
+                }
+                colLoadout.appendChild(divSkill); layout.appendChild(colLoadout);
 
-                    let name = "EMPTY";
-                    let desc = "No item assigned";
-                    let icon = "Checking...";
-
-                    if (id) {
-                        let item = DataManager.inventory.find(inv => inv.id === id);
-                        let count = 0;
-
-                        if (item) {
-                            count = DataManager.inventory.filter(inv => inv.id === id).length;
-                        } else {
-                            // Fallback to Master Data if not in inventory (Count = 0)
-                            item = DataManager.itemMaster.find(m => m.id === id);
-                        }
-
-                        if (item) {
-                            name = getTxItemName(item);
-                            desc = getTxItemDesc(item);
-                            icon = `x${count}`;
-                        } else {
-                            name = "Unknown (Invalid ID)";
-                            desc = "Item data not found";
-                        }
-                    }
-
-                    row.innerHTML = `
-                      <div style="flex:1">
-                        <b style="color:var(--neon-yellow)">SLOT ${i + 1}: ${name}</b> <span style="font-size:0.8em; color:var(--neon-green)">${id ? icon : ''}</span><br>
-                        <small style="color:#ccc">${desc}</small>
-                      </div>`;
-
-                    const btnChange = document.createElement('button');
-                    btnChange.className = 'cyber-btn';
-                    btnChange.innerText = 'CHANGE';
-                    btnChange.style.marginLeft = '5px';
-                    btnChange.onclick = () => {
-                        // Open Item Picker Modal
-                        const overlay = document.createElement('div');
-                        overlay.className = 'cyber-overlay';
-                        const panel = document.createElement('div');
-                        panel.className = 'cyber-panel item-selector-panel';
-                        panel.innerHTML = `<h3 style="color:var(--neon-green)">SELECT ITEM FOR SLOT ${i + 1}</h3>`;
-
-                        const listDiv = document.createElement('div');
-                        listDiv.style.maxHeight = '300px'; listDiv.style.overflowY = 'auto';
-
-                        // Get unique consumables from inventory
-                        const consumables = this.groupItems(DataManager.inventory.filter(inv => inv.category === 'consumable'));
-
-                        if (consumables.length === 0) {
-                            listDiv.innerHTML = "<p>No consumables in inventory.</p>";
-                        }
-
-                        consumables.forEach(g => {
-                            const row = document.createElement('div');
-                            row.className = 'item-list-row';
-                            row.style.display = 'flex';
-                            row.style.justifyContent = 'space-between';
-                            row.style.alignItems = 'center';
-                            row.style.cursor = 'pointer';
-
-                            row.innerHTML = `<div><b style="color:var(--neon-yellow)">${getTxItemName(g.item)}</b> x${g.count}</div>`;
-
-                            // Check if equipped in other slot? It's allowed to equip same item in multiple slots if you have enough logic, 
-                            // but currently ID based. If IDs are unique per instance... wait, inventory items are instances. 
-                            // But groupItems merges them.
-                            // DataManager.inventory uses unique IDs for instances? No, `inventory` is list of `ItemData`.
-                            // `ItemData` has `id`. If generic items share ID (e.g. 'I001'), then they are same.
-                            // `equippedConsumables` stores `itemId` (string).
-                            // So "Equip Consumable" means setting the ID. When consumed, we remove ONE instance of that ID from inventory.
-
-                            const btnSelect = document.createElement('button');
-                            btnSelect.className = 'cyber-btn';
-                            btnSelect.innerText = 'SELECT';
-                            btnSelect.onclick = () => {
-                                DataManager.equipConsumable(i, g.item.id);
-                                overlay.remove();
-                                render();
-                            };
-
-                            row.onclick = btnSelect.onclick; // Make whole row clickable
-                            row.appendChild(btnSelect);
-                            listDiv.appendChild(row);
-                        });
-
-                        panel.appendChild(listDiv);
-
-                        const close = document.createElement('button');
-                        close.className = 'cyber-btn danger'; close.innerText = 'Back';
-                        close.style.width = '100%'; close.style.marginTop = '10px';
-                        close.onclick = () => overlay.remove();
-                        panel.appendChild(close);
-
-                        overlay.appendChild(panel);
-                        document.body.appendChild(overlay);
-                    };
-
-                    const btnClear = document.createElement('button');
-                    btnClear.className = 'cyber-btn danger';
-                    btnClear.innerText = 'UNEQUIP';
-                    if (!id) btnClear.style.visibility = 'hidden';
-                    btnClear.onclick = () => {
-                        DataManager.unequipConsumable(i);
-                        render();
-                    };
-
-                    const btnWrap = document.createElement('div');
-                    btnWrap.style.display = 'flex';
-                    btnWrap.style.flexDirection = 'column';
-                    btnWrap.style.gap = '5px';
-
-                    btnWrap.appendChild(btnChange);
-                    btnWrap.appendChild(btnClear);
-                    row.appendChild(btnWrap);
-
-                    list.appendChild(row);
-                });
-            } else {
-                colBag.innerHTML = `<h3 style="color:var(--neon-blue)">ARCHIVE</h3>`;
+                const colArchive = document.createElement('div'); colArchive.innerHTML = `<h3 style="color:var(--neon-blue)">ARCHIVE</h3>`;
+                const list = document.createElement('div'); list.style.height = '400px'; list.style.overflowY = 'auto';
                 DataManager.skillMaster.filter(s => s.learned).forEach(skill => {
                     const isEquipped = DataManager.equippedSkills.includes(skill);
                     const row = document.createElement('div'); row.className = 'item-list-row';
                     if (isEquipped) row.style.opacity = '0.5';
-
-                    row.innerHTML = `
-                  <div style="flex:1">
-                    <b style="color:var(--neon-yellow)">${getTxItemName(skill)}</b> <small>MP:${skill.mpCost}</small><br>
-                    <small style="color:#ccc">${getTxItemDesc(skill)}</small>
-                  </div>`;
-
-                    const btn = document.createElement('button');
-                    btn.className = isEquipped ? 'cyber-btn danger' : 'cyber-btn';
+                    row.innerHTML = `<div style="flex:1"><b style="color:var(--neon-yellow)">${getTxItemName(skill)}</b> <small>MP:${skill.mpCost}</small><br><small style="color:#ccc">${getTxItemDesc(skill)}</small></div>`;
+                    const btn = document.createElement('button'); btn.className = isEquipped ? 'cyber-btn danger' : 'cyber-btn';
                     btn.innerText = isEquipped ? 'REMOVE' : 'SET';
                     btn.onclick = () => {
                         if (isEquipped) {
@@ -1457,24 +1299,115 @@ class MapScene extends Phaser.Scene {
                             if (idx !== -1) DataManager.unequipSkill(idx);
                             render();
                         } else {
-                            if (DataManager.equipSkill(skill.id)) { render(); } else { this.showMessage("Deck Full"); }
+                            if (DataManager.equipSkill(skill.id)) render(); else this.showMessage("Deck Full");
                         }
                     };
-                    row.appendChild(btn);
+                    row.appendChild(btn); list.appendChild(row);
+                });
+                colArchive.appendChild(list); layout.appendChild(colArchive);
+
+            } else if (this.statusTab === 'guitars') {
+                layout.style.gridTemplateColumns = isWide ? '1fr 2fr' : '1fr';
+                const colList = document.createElement('div'); colList.innerHTML = `<h3 style="color:var(--neon-blue)">GUITAR COLLECTION</h3>`;
+                const list = document.createElement('div'); list.style.height = '400px'; list.style.overflowY = 'auto';
+                DataManager.ownedGuitars.forEach(g => {
+                    const row = document.createElement('div'); row.className = 'item-list-row';
+                    const isEquipped = DataManager.currentGuitar && DataManager.currentGuitar.id === g.id;
+                    if (isEquipped) row.style.border = '1px solid var(--neon-green)';
+                    row.innerHTML = `<div style="flex:1"><b style="color:var(--neon-yellow)">${getTxItemName(g)}</b> ${isEquipped ? '<span style="color:var(--neon-green)">[EQUIPPED]</span>' : ''}<br><small style="color:#ccc">SPD:${g.speed} RATE:${g.fireRate}</small></div>`;
+                    if (!isEquipped) {
+                        const btn = document.createElement('button'); btn.className = 'cyber-btn'; btn.innerText = 'EQUIP';
+                        btn.onclick = () => { DataManager.equipGuitar(g); render(); };
+                        row.appendChild(btn);
+                    }
                     list.appendChild(row);
                 });
-            }
-            colBag.appendChild(list);
-            layout.appendChild(colBag);
-            mainArea.appendChild(layout);
+                colList.appendChild(list); layout.appendChild(colList);
 
-            // Restore scroll position
-            // Use setTimeout to allow DOM reflow
-            setTimeout(() => {
-                ui.content.scrollTop = scrollPos;
-            }, 0);
+            } else if (this.statusTab === 'slots') {
+                layout.style.gridTemplateColumns = isWide ? '1fr 2fr' : '1fr';
+                const colSlots = document.createElement('div'); colSlots.innerHTML = `<h3 style="color:var(--neon-blue)">BATTLE BELT (SLOTS)</h3><p style="color:#aaa; font-size:0.9em">Assign consumables for battle.</p>`;
+                const list = document.createElement('div'); list.style.height = '400px'; list.style.overflowY = 'auto';
+                DataManager.equippedConsumables.forEach((id, i) => {
+                    const row = document.createElement('div'); row.className = 'item-list-row'; row.style.border = '1px solid var(--neon-pink)';
+                    let name = "EMPTY", desc = "No item assigned", icon = "";
+                    if (id) {
+                        let item = DataManager.inventory.find(inv => inv.id === id);
+                        let count = 0;
+                        if (item) count = DataManager.inventory.filter(inv => inv.id === id).length;
+                        else item = DataManager.itemMaster.find(m => m.id === id);
+                        if (item) { name = getTxItemName(item); desc = getTxItemDesc(item); icon = `x${count}`; }
+                    }
+                    row.innerHTML = `<div style="flex:1"><b style="color:var(--neon-yellow)">SLOT ${i + 1}: ${name}</b> <span style="font-size:0.8em; color:var(--neon-green)">${id ? icon : ''}</span><br><small style="color:#ccc">${desc}</small></div>`;
+                    const btnWrap = document.createElement('div'); btnWrap.style.display = 'flex'; btnWrap.style.gap = '5px'; btnWrap.style.flexDirection = 'column';
+                    const btnChange = document.createElement('button'); btnChange.className = 'cyber-btn'; btnChange.innerText = 'CHANGE';
+                    btnChange.onclick = () => this.openItemPickerForSlot(i, render);
+                    btnWrap.appendChild(btnChange);
+                    const btnClear = document.createElement('button'); btnClear.className = 'cyber-btn danger'; btnClear.innerText = 'UNEQUIP';
+                    if (!id) btnClear.style.visibility = 'hidden';
+                    btnClear.onclick = () => { DataManager.unequipConsumable(i); render(); };
+                    btnWrap.appendChild(btnClear);
+                    row.appendChild(btnWrap); list.appendChild(row);
+                });
+                colSlots.appendChild(list); layout.appendChild(colSlots);
+            }
+            mainArea.appendChild(layout);
+            setTimeout(() => { ui.content.scrollTop = scrollPos; }, 0);
         };
         render();
+    }
+
+    // Helper for Item Picker to keep render() clean
+    openItemPickerForSlot(slotIndex: number, renderCallback: () => void) {
+        const overlay = document.createElement('div');
+        overlay.className = 'cyber-overlay';
+        const panel = document.createElement('div');
+        panel.className = 'cyber-panel item-selector-panel';
+        panel.innerHTML = `<h3 style="color:var(--neon-green)">SELECT ITEM FOR SLOT ${slotIndex + 1}</h3>`;
+
+        const listDiv = document.createElement('div');
+        listDiv.style.maxHeight = '300px'; listDiv.style.overflowY = 'auto';
+
+        const consumables = this.groupItems(DataManager.inventory.filter(inv => inv.category === 'consumable'));
+
+        if (consumables.length === 0) {
+            listDiv.innerHTML = "<p>No consumables in inventory.</p>";
+        }
+
+        consumables.forEach(g => {
+            const row = document.createElement('div');
+            row.className = 'item-list-row';
+            row.style.display = 'flex';
+            row.style.justifyContent = 'space-between';
+            row.style.alignItems = 'center';
+            row.style.cursor = 'pointer';
+
+            row.innerHTML = `<div><b style="color:var(--neon-yellow)">${getTxItemName(g.item)}</b> x${g.count}</div>`;
+
+            const btnSelect = document.createElement('button');
+            btnSelect.className = 'cyber-btn';
+            btnSelect.innerText = 'SELECT';
+            btnSelect.onclick = () => {
+                DataManager.equipConsumable(slotIndex, g.item.id);
+                overlay.remove();
+                renderCallback();
+            };
+
+            row.onclick = btnSelect.onclick;
+            row.appendChild(btnSelect);
+            listDiv.appendChild(row);
+        });
+
+        panel.appendChild(listDiv);
+
+        const close = document.createElement('button');
+        close.className = 'cyber-btn danger'; close.innerText = 'Back';
+        close.style.width = '100%'; close.style.marginTop = '10px';
+        close.onclick = () => overlay.remove();
+        panel.appendChild(close);
+
+        overlay.appendChild(panel);
+        document.body.appendChild(overlay);
     }
 
     openShopUI() {
